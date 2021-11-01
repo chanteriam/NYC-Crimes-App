@@ -8,6 +8,7 @@ USE NYCCrimes;
 /* DELETE TABLES IF EXIST */
 DROP TABLE IF EXISTS crimes_mega;
 
+
 /* CREATE MEGA TABLE */
 CREATE TABLE IF NOT EXISTS crimes_mega (
 	cmplnt_num			INT,
