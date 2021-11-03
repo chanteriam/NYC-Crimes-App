@@ -5,13 +5,11 @@ DROP DATABASE IF EXISTS NYCCrimes;
 CREATE DATABASE NYCCrimes;
 USE NYCCrimes;
 
-/* DELETE TABLES IF EXIST */
-DROP TABLE IF EXISTS crimes_mega;
-
 
 /* CREATE MEGA TABLE */
+DROP TABLE IF EXISTS crimes_mega;
 CREATE TABLE IF NOT EXISTS crimes_mega (
-	cmplnt_num			INT,
+	cmplnt_num			INT UNSIGNED,
 	cmplnt_fr_dt		VARCHAR(10), -- need to convert to DATE
 	cmplnt_fr_tm		TIME,
 	cmplnt_to_dt		VARCHAR(10), -- need to convert to DATE
@@ -49,7 +47,162 @@ CREATE TABLE IF NOT EXISTS crimes_mega (
 ) ENGINE=INNODB;
 
 /* CREATE NORMALIZED TABLES */
+-- storing unused attributes
+DROP TABLE IF EXISTS unused_attrs;
+CREATE TABLE IF NOT EXISTS unused_attrs (
+	lat_lon				VARCHAR(40)
+) ENGINE=INNODB;
 
+-- crime type information tables
+DROP TABLE IF EXISTS offense_type;
+CREATE TABLE IF NOT EXISTS offense_type (
+	cmplnt_num			INT UNSIGNED,
+    ky_cd				SMALLINT UNSIGNED,
+    ofns_desc			VARCHAR(40),
+    PRIMARY KEY(cmplnt_num, ky_cd)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS intrnl_class;
+CREATE TABLE IF NOT EXISTS intrnl_class(
+	cmplnt_num			INT UNSIGNED,
+    pd_cd				SMALLINT UNSIGNED,
+    pd_desc				VARCHAR(75),
+    crm_atpt_cptd_cd	VARCHAR(10),
+    PRIMARY KEY(cmplnt_num, pd_cd) -- FIXME - MAKE THIS INTO A FOREIGN KEY?
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS law_class;
+CREATE TABLE IF NOT EXISTS law_class (
+	pd_cd				SMALLINT UNSIGNED,
+    law_cat_cd			VARCHAR(15),
+    PRIMARY KEY(pd_cd)				-- FIXME - MAKE THIS INTO A FOREIGN KEY?
+) ENGINE=INNODB;
+
+-- complaint information tables
+DROP TABLE IF EXISTS cmplnt_time_date;
+CREATE TABLE IF NOT EXISTS cmplnt_time_date(
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    cmplnt_fr_tm		TIME,
+    cmplnt_to_dt		DATE,
+    cmplnt_to_tm		TIME
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_rpt_dt;
+CREATE TABLE IF NOT EXISTS cmplnt_rpt_dt(
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    pd_cd				SMALLINT UNSIGNED,
+    rpt_dt				DATE,
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd) -- FIXME - MAKE FOREIGN KEYS?
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_loc;
+CREATE TABLE IF NOT EXISTS cmplnt_loc(
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    boro_num			VARCHAR(15),
+    loc_of_occur_desc	VARCHAR(15),
+    CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
+		REFERENCES cmplnt_time_date(cmplnt_num),
+	CONSTRAINT fk_cm_fr_dt FOREIGN KEY(cmplnt_fr_dt)
+		REFERENCES cmplnt_time_date(cmplnt_fr_dt),
+	PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_housing_loc;
+CREATE TABLE IF NOT EXISTS cmplnt_housing_loc(
+	cmplnt_num			INT UNSIGNED,
+    housing_psa			MEDIUMINT UNSIGNED,
+    CONSTRAINT fk_cm_num2 FOREIGN KEY(cmplnt_num)
+		REFERENCES cmplnt_time_date(cmplnt_num),
+    PRIMARY KEY(cmplnt_num)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS housing_dev;
+CREATE TABLE IF NOT EXISTS housing_dev(
+	housing_psa			MEDIUMINT UNSIGNED,
+    hadevelopt			VARCHAR(50),
+    CONSTRAINT fk_housing FOREIGN KEY(housing_psa)
+		REFERENCES cmplnt_housing_loc(housing_psa)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_prem_type;
+CREATE TABLE IF NOT EXISTS cmplnt_prem_type(
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    pd_cd				SMALLINT UNSIGNED,
+    prem_typ_desc		VARCHAR(30),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd) -- FIXME - FOREIGN KEY?
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_trans_distr;
+CREATE TABLE IF NOT EXISTS cmplnt_trans_distr(
+	cmplnt_num			INT UNSIGNED,
+    transit_district	TINYINT UNSIGNED,
+    CONSTRAINT fk_cm_num3 FOREIGN KEY(cmplnt_num)
+		REFERENCES cmplnt_time_date(cmplnt_num),
+    PRIMARY KEY(cmplnt_num)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_coords;
+CREATE TABLE IF NOT EXISTS cmplnt_coords(
+	x_coord_cd			INT UNSIGNED,
+    y_coord_cd			INT UNSIGNED,
+    latitude			DECIMAL(12,10),
+    longitude			DECIMAL(12,10),
+    PRIMARY KEY(x_coord_cd, y_coord_cd)
+) ENGINE=INNODB;
+
+-- precint/jurisdiction loc information
+DROP TABLE IF EXISTS precint_loc;
+CREATE TABLE IF NOT EXISTS precint_loc( -- FIXME; may have to split this up to decrease null vals
+	cmplnt_num			INT UNSIGNED,
+    addr_pct_cd			TINYINT UNSIGNED,
+    patrol_boro			VARCHAR(30),
+    boro_nm				VARCHAR(15),
+    station_name		VARCHAR(35),
+    PRIMARY KEY(cmplnt_num, addr_pct_cd) -- FIXME; foreign key?
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS juris_loc;
+CREATE TABLE IF NOT EXISTS juris_loc(
+	cmplnt_num			INT UNSIGNED,
+    jurisdiction_code 	TINYINT UNSIGNED,
+    juris_desc			VARCHAR(40),
+    PRIMARY KEY(cmplnt_num, jurisdiction_code) -- FIXME; foreign key?
+) ENGINE=INNODB;
+
+-- victim and suspect information
+DROP TABLE IF EXISTS vic_info;
+CREATE TABLE IF NOT EXISTS vic_info(
+	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
+    cmplnt_to_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
+	x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+	vic_age_group		VARCHAR(10),
+	vic_race			VARCHAR(35),
+	vic_sex				CHAR(1),
+    PRIMARY KEY(cmplnt_num, cmplnt_to_dt, x_coord_cd)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS sus_info;
+CREATE TABLE IF NOT EXISTS sus_info(
+	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
+    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
+    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+	susp_race			VARCHAR(10),
+    susp_sex			CHAR(1),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS sus_age_info;
+CREATE TABLE IF NOT EXISTS sus_age_info(
+	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
+    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
+    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+    susp_age_group 		VARCHAR(10),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group)
+) ENGINE=INNODB;
 
 /* LOAD DATA INTO MEGA TABLE*/
 -- to allow the data to load without timing out, need to set DBMS connection read timeout interval (in seconds) to 0: 
@@ -96,3 +249,7 @@ SET SQL_SAFE_UPDATES=1;
 
 
 /* POPULATING NORMALIZED TABLES FROM MEGA TABLE */
+SELECT DISTINCT law_cat_cd
+FROM crimes_mega
+WHERE pd_cd IS NULL
+
