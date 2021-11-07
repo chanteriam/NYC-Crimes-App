@@ -85,7 +85,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_time_date(
     cmplnt_fr_dt		DATE,
     cmplnt_fr_tm		TIME,
     cmplnt_to_dt		DATE,
-    cmplnt_to_tm		TIME
+    cmplnt_to_tm		TIME,
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS cmplnt_rpt_dt;
@@ -101,12 +102,12 @@ DROP TABLE IF EXISTS cmplnt_loc;
 CREATE TABLE IF NOT EXISTS cmplnt_loc(
 	cmplnt_num			INT UNSIGNED,
     cmplnt_fr_dt		DATE,
-    boro_num			VARCHAR(15),
+    boro_nm			VARCHAR(15),
     loc_of_occur_desc	VARCHAR(15),
-    CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
-		REFERENCES cmplnt_time_date(cmplnt_num),
-	CONSTRAINT fk_cm_fr_dt FOREIGN KEY(cmplnt_fr_dt)
-		REFERENCES cmplnt_time_date(cmplnt_fr_dt),
+--     CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
+-- 		REFERENCES cmplnt_time_date(cmplnt_num),
+-- 	CONSTRAINT fk_cm_fr_dt FOREIGN KEY(cmplnt_fr_dt)
+-- 		REFERENCES cmplnt_time_date(cmplnt_fr_dt),
 	PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -122,9 +123,7 @@ CREATE TABLE IF NOT EXISTS cmplnt_housing_loc(
 DROP TABLE IF EXISTS housing_dev;
 CREATE TABLE IF NOT EXISTS housing_dev(
 	housing_psa			MEDIUMINT UNSIGNED,
-    hadevelopt			VARCHAR(50),
-    CONSTRAINT fk_housing FOREIGN KEY(housing_psa)
-		REFERENCES cmplnt_housing_loc(housing_psa)
+    hadevelopt			VARCHAR(50)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS cmplnt_prem_type;
@@ -245,11 +244,141 @@ ALTER TABLE crimes_mega
     CHANGE latitude latitude DECIMAL(12,10),
     CHANGE longitude longitude DECIMAL(12,10);
 
-SET SQL_SAFE_UPDATES=1;
-
 
 /* POPULATING NORMALIZED TABLES FROM MEGA TABLE */
-SELECT DISTINCT law_cat_cd
+
+-- unused attributes
+INSERT INTO unused_attrs
+SELECT lat_lon
+FROM crimes_mega;
+
+-- offense type
+INSERT INTO offense_type
+SELECT DISTINCT cmplnt_num, ky_cd, ofns_desc
+FROM crimes_mega;
+
+-- internal classification
+INSERT INTO intrnl_class
+SELECT DISTINCT cmplnt_num, pd_cd, pd_desc, crm_atpt_cptd_cd
 FROM crimes_mega
-WHERE pd_cd IS NULL
+WHERE NOT pd_cd IS NULL;
+
+-- law classification
+INSERT INTO law_class
+SELECT DISTINCT pd_cd, law_cat_cd
+FROM crimes_mega
+WHERE NOT pd_cd IS NULL;
+
+-- complaint date & time
+INSERT INTO cmplnt_time_date
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, cmplnt_to_dt, cmplnt_to_tm
+FROM crimes_mega
+WHERE NOT cmplnt_fr_dt IS NULL;
+
+-- complaint report date
+INSERT INTO cmplnt_rpt_dt
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, pd_cd, rpt_dt
+FROM crimes_mega
+WHERE NOT cmplnt_fr_dt IS NULL AND NOT pd_cd IS NULL;
+
+-- complaint location
+INSERT INTO cmplnt_loc
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, boro_nm, loc_of_occur_desc
+FROM crimes_mega
+WHERE NOT cmplnt_fr_dt IS NULL;
+
+-- complaing housing psa; FIX ME: foreign key fails
+/*
+INSERT INTO cmplnt_housing_loc
+SELECT DISTINCT cmplnt_num, housing_psa
+FROM crimes_mega;
+*/ 
+
+/*
+DROP TABLE IF EXISTS housing_dev;
+CREATE TABLE IF NOT EXISTS housing_dev(
+	housing_psa			MEDIUMINT UNSIGNED,
+    hadevelopt			VARCHAR(50)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_prem_type;
+CREATE TABLE IF NOT EXISTS cmplnt_prem_type(
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    pd_cd				SMALLINT UNSIGNED,
+    prem_typ_desc		VARCHAR(30),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd) -- FIXME - FOREIGN KEY?
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_trans_distr;
+CREATE TABLE IF NOT EXISTS cmplnt_trans_distr(
+	cmplnt_num			INT UNSIGNED,
+    transit_district	TINYINT UNSIGNED,
+    CONSTRAINT fk_cm_num3 FOREIGN KEY(cmplnt_num)
+		REFERENCES cmplnt_time_date(cmplnt_num),
+    PRIMARY KEY(cmplnt_num)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_coords;
+CREATE TABLE IF NOT EXISTS cmplnt_coords(
+	x_coord_cd			INT UNSIGNED,
+    y_coord_cd			INT UNSIGNED,
+    latitude			DECIMAL(12,10),
+    longitude			DECIMAL(12,10),
+    PRIMARY KEY(x_coord_cd, y_coord_cd)
+) ENGINE=INNODB;
+
+-- precint/jurisdiction loc information
+DROP TABLE IF EXISTS precint_loc;
+CREATE TABLE IF NOT EXISTS precint_loc( -- FIXME; may have to split this up to decrease null vals
+	cmplnt_num			INT UNSIGNED,
+    addr_pct_cd			TINYINT UNSIGNED,
+    patrol_boro			VARCHAR(30),
+    boro_nm				VARCHAR(15),
+    station_name		VARCHAR(35),
+    PRIMARY KEY(cmplnt_num, addr_pct_cd) -- FIXME; foreign key?
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS juris_loc;
+CREATE TABLE IF NOT EXISTS juris_loc(
+	cmplnt_num			INT UNSIGNED,
+    jurisdiction_code 	TINYINT UNSIGNED,
+    juris_desc			VARCHAR(40),
+    PRIMARY KEY(cmplnt_num, jurisdiction_code) -- FIXME; foreign key?
+) ENGINE=INNODB;
+
+-- victim and suspect information
+DROP TABLE IF EXISTS vic_info;
+CREATE TABLE IF NOT EXISTS vic_info(
+	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
+    cmplnt_to_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
+	x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+	vic_age_group		VARCHAR(10),
+	vic_race			VARCHAR(35),
+	vic_sex				CHAR(1),
+    PRIMARY KEY(cmplnt_num, cmplnt_to_dt, x_coord_cd)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS sus_info;
+CREATE TABLE IF NOT EXISTS sus_info(
+	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
+    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
+    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+	susp_race			VARCHAR(10),
+    susp_sex			CHAR(1),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS sus_age_info;
+CREATE TABLE IF NOT EXISTS sus_age_info(
+	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
+    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
+    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+    susp_age_group 		VARCHAR(10),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group)
+) ENGINE=INNODB;
+*/
+
+SET SQL_SAFE_UPDATES=1;
+
 
