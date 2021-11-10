@@ -114,16 +114,17 @@ CREATE TABLE IF NOT EXISTS cmplnt_loc(
 DROP TABLE IF EXISTS cmplnt_housing_loc;
 CREATE TABLE IF NOT EXISTS cmplnt_housing_loc(
 	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
     housing_psa			MEDIUMINT UNSIGNED,
-    CONSTRAINT fk_cm_num2 FOREIGN KEY(cmplnt_num)
-		REFERENCES cmplnt_time_date(cmplnt_num),
-    PRIMARY KEY(cmplnt_num)
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS housing_dev;
 CREATE TABLE IF NOT EXISTS housing_dev(
-	housing_psa			MEDIUMINT UNSIGNED,
-    hadevelopt			VARCHAR(50)
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    hadevelopt			VARCHAR(50),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS cmplnt_prem_type;
@@ -139,13 +140,20 @@ DROP TABLE IF EXISTS cmplnt_trans_distr;
 CREATE TABLE IF NOT EXISTS cmplnt_trans_distr(
 	cmplnt_num			INT UNSIGNED,
     transit_district	TINYINT UNSIGNED,
-    CONSTRAINT fk_cm_num3 FOREIGN KEY(cmplnt_num)
-		REFERENCES cmplnt_time_date(cmplnt_num),
     PRIMARY KEY(cmplnt_num)
 ) ENGINE=INNODB;
 
-DROP TABLE IF EXISTS cmplnt_coords;
-CREATE TABLE IF NOT EXISTS cmplnt_coords(
+DROP TABLE IF EXISTS cmplnt_x_y;
+CREATE TABLE IF NOT EXISTS cmplnt_x_y(
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    x_coord_cd			INT UNSIGNED,
+    y_coord_cd			INT UNSIGNED,
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
+) ENGINE=INNODB;
+
+DROP TABLE IF EXISTS cmplnt_lat_lon;
+CREATE TABLE IF NOT EXISTS cmplnt_lat_lon(
 	x_coord_cd			INT UNSIGNED,
     y_coord_cd			INT UNSIGNED,
     latitude			DECIMAL(12,10),
@@ -189,7 +197,7 @@ CREATE TABLE IF NOT EXISTS sus_info(
 	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
     cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
     x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
-	susp_race			VARCHAR(10),
+	susp_race			VARCHAR(35),
     susp_sex			CHAR(1),
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
 ) ENGINE=INNODB;
@@ -213,6 +221,7 @@ LOAD DATA INFILE '/Users/shaymilner/Library/Mobile Documents/com~apple~CloudDocs
 	LINES TERMINATED BY '\n'
     IGNORE 1 LINES;
 
+
 -- FIX THE DATA TYPES
 SET SQL_SAFE_UPDATES=0;
 
@@ -223,7 +232,8 @@ SET cmplnt_fr_dt = if(cmplnt_fr_dt != '', STR_TO_DATE(cmplnt_fr_dt, "%m/%d/%Y"),
 	addr_pct_cd = if(addr_pct_cd != '', CONVERT(addr_pct_cd, UNSIGNED), NULL),
     pd_cd = if(pd_cd != '', CONVERT(pd_cd, UNSIGNED), NULL),
     jurisdiction_code = if(jurisdiction_code != '', CONVERT(jurisdiction_code, UNSIGNED), NULL),
-    housing_psa = IF(housing_psa != '' AND housing_psa != NULL, CONVERT(housing_psa, UNSIGNED), NULL),
+	housing_psa = IF(housing_psa != '' AND housing_psa != 'NA', 
+		CONVERT(replace(housing_psa,',',''), UNSIGNED), NULL),
     x_coord_cd = IF(x_coord_cd != '', CONVERT(x_coord_cd, UNSIGNED), NULL),
     y_coord_cd = IF(y_coord_cd != '', CONVERT(y_coord_cd, UNSIGNED), NULL),
     transit_district = IF(transit_district != '', CONVERT(transit_district, UNSIGNED), NULL),
@@ -244,7 +254,6 @@ ALTER TABLE crimes_mega
     CHANGE latitude latitude DECIMAL(12,10),
     CHANGE longitude longitude DECIMAL(12,10);
 
-
 /* POPULATING NORMALIZED TABLES FROM MEGA TABLE */
 
 -- unused attributes
@@ -261,124 +270,94 @@ FROM crimes_mega;
 INSERT INTO intrnl_class
 SELECT DISTINCT cmplnt_num, pd_cd, pd_desc, crm_atpt_cptd_cd
 FROM crimes_mega
-WHERE NOT pd_cd IS NULL;
+WHERE pd_cd IS NOT NULL;
 
 -- law classification
 INSERT INTO law_class
 SELECT DISTINCT pd_cd, law_cat_cd
 FROM crimes_mega
-WHERE NOT pd_cd IS NULL;
+WHERE pd_cd IS NOT NULL;
 
 -- complaint date & time
 INSERT INTO cmplnt_time_date
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, cmplnt_to_dt, cmplnt_to_tm
 FROM crimes_mega
-WHERE NOT cmplnt_fr_dt IS NULL;
+WHERE cmplnt_fr_dt IS NOT NULL;
 
 -- complaint report date
 INSERT INTO cmplnt_rpt_dt
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, pd_cd, rpt_dt
 FROM crimes_mega
-WHERE NOT cmplnt_fr_dt IS NULL AND NOT pd_cd IS NULL;
+WHERE cmplnt_fr_dt IS NOT NULL AND pd_cd IS NOT NULL;
 
 -- complaint location
 INSERT INTO cmplnt_loc
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, boro_nm, loc_of_occur_desc
 FROM crimes_mega
-WHERE NOT cmplnt_fr_dt IS NULL;
+WHERE cmplnt_fr_dt IS NOT NULL;
 
 -- complaing housing psa; FIX ME: foreign key fails
-/*
 INSERT INTO cmplnt_housing_loc
-SELECT DISTINCT cmplnt_num, housing_psa
-FROM crimes_mega;
-*/ 
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, housing_psa
+FROM crimes_mega
+WHERE cmplnt_fr_dt IS NOT NULL AND housing_psa IS NOT NULL;
 
-/*
-DROP TABLE IF EXISTS housing_dev;
-CREATE TABLE IF NOT EXISTS housing_dev(
-	housing_psa			MEDIUMINT UNSIGNED,
-    hadevelopt			VARCHAR(50)
-) ENGINE=INNODB;
+-- housing development
+INSERT INTO housing_dev
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, hadevelopt
+FROM crimes_mega
+WHERE cmplnt_fr_dt IS NOT NULL AND hadevelopt IS NOT NULL;
 
-DROP TABLE IF EXISTS cmplnt_prem_type;
-CREATE TABLE IF NOT EXISTS cmplnt_prem_type(
-	cmplnt_num			INT UNSIGNED,
-    cmplnt_fr_dt		DATE,
-    pd_cd				SMALLINT UNSIGNED,
-    prem_typ_desc		VARCHAR(30),
-    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd) -- FIXME - FOREIGN KEY?
-) ENGINE=INNODB;
+-- premise type
+INSERT INTO cmplnt_prem_type
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, pd_cd, prem_typ_desc
+FROM crimes_mega
+WHERE prem_typ_desc IS NOT NULL AND cmplnt_fr_dt IS NOT NULL AND pd_cd IS NOT NULL;
 
-DROP TABLE IF EXISTS cmplnt_trans_distr;
-CREATE TABLE IF NOT EXISTS cmplnt_trans_distr(
-	cmplnt_num			INT UNSIGNED,
-    transit_district	TINYINT UNSIGNED,
-    CONSTRAINT fk_cm_num3 FOREIGN KEY(cmplnt_num)
-		REFERENCES cmplnt_time_date(cmplnt_num),
-    PRIMARY KEY(cmplnt_num)
-) ENGINE=INNODB;
+-- train station district
+INSERT INTO cmplnt_trans_distr
+SELECT DISTINCT cmplnt_num, transit_district
+FROM crimes_mega
+WHERE transit_district IS NOT NULL;
 
-DROP TABLE IF EXISTS cmplnt_coords;
-CREATE TABLE IF NOT EXISTS cmplnt_coords(
-	x_coord_cd			INT UNSIGNED,
-    y_coord_cd			INT UNSIGNED,
-    latitude			DECIMAL(12,10),
-    longitude			DECIMAL(12,10),
-    PRIMARY KEY(x_coord_cd, y_coord_cd)
-) ENGINE=INNODB;
+-- x, y locations (fixme)
+INSERT INTO cmplnt_x_y
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, y_coord_cd
+FROM crimes_mega
+WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
--- precint/jurisdiction loc information
-DROP TABLE IF EXISTS precint_loc;
-CREATE TABLE IF NOT EXISTS precint_loc( -- FIXME; may have to split this up to decrease null vals
-	cmplnt_num			INT UNSIGNED,
-    addr_pct_cd			TINYINT UNSIGNED,
-    patrol_boro			VARCHAR(30),
-    boro_nm				VARCHAR(15),
-    station_name		VARCHAR(35),
-    PRIMARY KEY(cmplnt_num, addr_pct_cd) -- FIXME; foreign key?
-) ENGINE=INNODB;
+-- lat/long
+INSERT INTO cmplnt_lat_lon
+SELECT DISTINCT x_coord_cd, y_coord_cd, latitude, longitude
+FROM crimes_mega
+WHERE x_coord_cd IS NOT NULL;
 
-DROP TABLE IF EXISTS juris_loc;
-CREATE TABLE IF NOT EXISTS juris_loc(
-	cmplnt_num			INT UNSIGNED,
-    jurisdiction_code 	TINYINT UNSIGNED,
-    juris_desc			VARCHAR(40),
-    PRIMARY KEY(cmplnt_num, jurisdiction_code) -- FIXME; foreign key?
-) ENGINE=INNODB;
+-- precint/jurisdiction location
+INSERT INTO precint_loc
+SELECT DISTINCT cmplnt_num, addr_pct_cd, patrol_boro, boro_nm, station_name
+FROM crimes_mega
+WHERE addr_pct_cd IS NOT NULL;
 
--- victim and suspect information
-DROP TABLE IF EXISTS vic_info;
-CREATE TABLE IF NOT EXISTS vic_info(
-	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
-    cmplnt_to_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
-	x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
-	vic_age_group		VARCHAR(10),
-	vic_race			VARCHAR(35),
-	vic_sex				CHAR(1),
-    PRIMARY KEY(cmplnt_num, cmplnt_to_dt, x_coord_cd)
-) ENGINE=INNODB;
+INSERT INTO juris_loc
+SELECT DISTINCT cmplnt_num, jurisdiction_code, juris_desc
+FROM crimes_mega
+WHERE jurisdiction_code IS NOT NULL;
 
-DROP TABLE IF EXISTS sus_info;
-CREATE TABLE IF NOT EXISTS sus_info(
-	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
-    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
-    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
-	susp_race			VARCHAR(10),
-    susp_sex			CHAR(1),
-    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
-) ENGINE=INNODB;
+-- victim  information
+INSERT INTO vic_info
+SELECT DISTINCT cmplnt_num, cmplnt_to_dt, x_coord_cd, vic_age_group, vic_race, vic_sex
+FROM crimes_mega
+WHERE cmplnt_to_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
-DROP TABLE IF EXISTS sus_age_info;
-CREATE TABLE IF NOT EXISTS sus_age_info(
-	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
-    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
-    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
-    susp_age_group 		VARCHAR(10),
-    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group)
-) ENGINE=INNODB;
-*/
+-- suspect information need to run (FIX ME)
+INSERT INTO sus_info
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_race, susp_sex
+FROM crimes_mega
+WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
+
+INSERT INTO sus_age_info
+SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group
+FROM crimes_mega
+WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
 SET SQL_SAFE_UPDATES=1;
-
-
