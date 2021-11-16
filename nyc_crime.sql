@@ -62,21 +62,26 @@ CREATE TABLE IF NOT EXISTS offense_type (
     PRIMARY KEY(cmplnt_num, ky_cd)
 ) ENGINE=INNODB;
 
+DROP TABLE IF EXISTS law_class;
+CREATE TABLE IF NOT EXISTS law_class (
+	pd_cd				SMALLINT UNSIGNED,
+    law_cat_cd			VARCHAR(15),
+    PRIMARY KEY(pd_cd)	
+) ENGINE=INNODB;
+
 DROP TABLE IF EXISTS intrnl_class;
 CREATE TABLE IF NOT EXISTS intrnl_class(
 	cmplnt_num			INT UNSIGNED,
     pd_cd				SMALLINT UNSIGNED,
     pd_desc				VARCHAR(75),
     crm_atpt_cptd_cd	VARCHAR(10),
-    PRIMARY KEY(cmplnt_num, pd_cd) -- FIXME - MAKE THIS INTO A FOREIGN KEY?
+    CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
+ 		REFERENCES offense_type(cmplnt_num),
+	CONSTRAINT fk_pd_cd FOREIGN KEY(pd_cd)
+		REFERENCES law_class(pd_cd),
+    PRIMARY KEY(cmplnt_num, pd_cd)
 ) ENGINE=INNODB;
 
-DROP TABLE IF EXISTS law_class;
-CREATE TABLE IF NOT EXISTS law_class (
-	pd_cd				SMALLINT UNSIGNED,
-    law_cat_cd			VARCHAR(15),
-    PRIMARY KEY(pd_cd)				-- FIXME - MAKE THIS INTO A FOREIGN KEY?
-) ENGINE=INNODB;
 
 -- complaint information tables
 DROP TABLE IF EXISTS cmplnt_time_date;
@@ -86,6 +91,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_time_date(
     cmplnt_fr_tm		TIME,
     cmplnt_to_dt		DATE,
     cmplnt_to_tm		TIME,
+    CONSTRAINT fk_cm_num2 FOREIGN KEY(cmplnt_num)
+ 		REFERENCES offense_type(cmplnt_num),
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -95,7 +102,11 @@ CREATE TABLE IF NOT EXISTS cmplnt_rpt_dt(
     cmplnt_fr_dt		DATE,
     pd_cd				SMALLINT UNSIGNED,
     rpt_dt				DATE,
-    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd) -- FIXME - MAKE FOREIGN KEYS?
+    CONSTRAINT fk_cm_dt FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+	CONSTRAINT fk_pd_cd2 FOREIGN KEY(pd_cd)
+ 		REFERENCES law_class(pd_cd),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS cmplnt_loc;
@@ -104,10 +115,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_loc(
     cmplnt_fr_dt		DATE,
     boro_nm			VARCHAR(15),
     loc_of_occur_desc	VARCHAR(15),
---     CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
--- 		REFERENCES cmplnt_time_date(cmplnt_num),
--- 	CONSTRAINT fk_cm_fr_dt FOREIGN KEY(cmplnt_fr_dt)
--- 		REFERENCES cmplnt_time_date(cmplnt_fr_dt),
+	CONSTRAINT fk_cm_dt2 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
 	PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -116,6 +125,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_housing_loc(
 	cmplnt_num			INT UNSIGNED,
     cmplnt_fr_dt		DATE,
     housing_psa			MEDIUMINT UNSIGNED,
+    CONSTRAINT fk_cm_dt3 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -124,34 +135,34 @@ CREATE TABLE IF NOT EXISTS housing_dev(
 	cmplnt_num			INT UNSIGNED,
     cmplnt_fr_dt		DATE,
     hadevelopt			VARCHAR(50),
+    CONSTRAINT fk_cm_dt4 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
-DROP TABLE IF EXISTS cmplnt_prem_type;
+DROP TABLE IF EXISTS cmplnt_prem_type; 
 CREATE TABLE IF NOT EXISTS cmplnt_prem_type(
 	cmplnt_num			INT UNSIGNED,
     cmplnt_fr_dt		DATE,
     pd_cd				SMALLINT UNSIGNED,
     prem_typ_desc		VARCHAR(30),
-    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd) -- FIXME - FOREIGN KEY?
+	CONSTRAINT fk_cm_dt5 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+	CONSTRAINT fk_pd_cd3 FOREIGN KEY(pd_cd)
+ 		REFERENCES law_class(pd_cd),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS cmplnt_trans_distr;
 CREATE TABLE IF NOT EXISTS cmplnt_trans_distr(
 	cmplnt_num			INT UNSIGNED,
     transit_district	TINYINT UNSIGNED,
+	CONSTRAINT fk_cm_num3 FOREIGN KEY(cmplnt_num)
+ 		REFERENCES offense_type(cmplnt_num),
     PRIMARY KEY(cmplnt_num)
 ) ENGINE=INNODB;
 
-DROP TABLE IF EXISTS cmplnt_x_y;
-CREATE TABLE IF NOT EXISTS cmplnt_x_y(
-	cmplnt_num			INT UNSIGNED,
-    cmplnt_fr_dt		DATE,
-    x_coord_cd			INT UNSIGNED,
-    y_coord_cd			INT UNSIGNED,
-    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
-) ENGINE=INNODB;
-
+-- fixme below; need to fix constraints
 DROP TABLE IF EXISTS cmplnt_lat_lon;
 CREATE TABLE IF NOT EXISTS cmplnt_lat_lon(
 	x_coord_cd			INT UNSIGNED,
@@ -161,15 +172,31 @@ CREATE TABLE IF NOT EXISTS cmplnt_lat_lon(
     PRIMARY KEY(x_coord_cd, y_coord_cd)
 ) ENGINE=INNODB;
 
+DROP TABLE IF EXISTS cmplnt_x_y;
+CREATE TABLE IF NOT EXISTS cmplnt_x_y(
+	cmplnt_num			INT UNSIGNED,
+    cmplnt_fr_dt		DATE,
+    x_coord_cd			INT UNSIGNED,
+    y_coord_cd			INT UNSIGNED,
+	CONSTRAINT fk_cm_dt6 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+	CONSTRAINT fk_x_y FOREIGN KEY(x_coord_cd, y_coord_cd)
+ 		REFERENCES cmplnt_lat_lon(x_coord_cd, y_coord_cd),
+    PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
+) ENGINE=INNODB;
+
+
 -- precint/jurisdiction loc information
 DROP TABLE IF EXISTS precint_loc;
-CREATE TABLE IF NOT EXISTS precint_loc( -- FIXME; may have to split this up to decrease null vals
+CREATE TABLE IF NOT EXISTS precint_loc( 
 	cmplnt_num			INT UNSIGNED,
     addr_pct_cd			TINYINT UNSIGNED,
     patrol_boro			VARCHAR(30),
     boro_nm				VARCHAR(15),
     station_name		VARCHAR(35),
-    PRIMARY KEY(cmplnt_num, addr_pct_cd) -- FIXME; foreign key?
+	CONSTRAINT fk_cm_num4 FOREIGN KEY(cmplnt_num)
+ 		REFERENCES offense_type(cmplnt_num),
+    PRIMARY KEY(cmplnt_num, addr_pct_cd)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS juris_loc;
@@ -177,44 +204,54 @@ CREATE TABLE IF NOT EXISTS juris_loc(
 	cmplnt_num			INT UNSIGNED,
     jurisdiction_code 	TINYINT UNSIGNED,
     juris_desc			VARCHAR(40),
-    PRIMARY KEY(cmplnt_num, jurisdiction_code) -- FIXME; foreign key?
+	CONSTRAINT fk_cm_num5 FOREIGN KEY(cmplnt_num)
+ 		REFERENCES offense_type(cmplnt_num),
+    PRIMARY KEY(cmplnt_num, jurisdiction_code)
 ) ENGINE=INNODB;
 
 -- victim and suspect information
 DROP TABLE IF EXISTS vic_info;
 CREATE TABLE IF NOT EXISTS vic_info(
-	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
-    cmplnt_to_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
-	x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+	cmplnt_num			INT UNSIGNED, 
+    cmplnt_to_dt		DATE,
+	x_coord_cd			INT UNSIGNED, 
 	vic_age_group		VARCHAR(10),
 	vic_race			VARCHAR(35),
 	vic_sex				CHAR(1),
+	CONSTRAINT fk_cm_num6 FOREIGN KEY(cmplnt_num)
+ 		REFERENCES offense_type(cmplnt_num),
+	CONSTRAINT fk_x FOREIGN KEY(x_coord_cd)
+ 		REFERENCES cmplnt_lat_lon(x_coord_cd),
     PRIMARY KEY(cmplnt_num, cmplnt_to_dt, x_coord_cd)
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS sus_info;
 CREATE TABLE IF NOT EXISTS sus_info(
-	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
-    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
-    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+	cmplnt_num			INT UNSIGNED, 
+    cmplnt_fr_dt		DATE, 
+    x_coord_cd			INT UNSIGNED, 
 	susp_race			VARCHAR(35),
     susp_sex			CHAR(1),
+	CONSTRAINT fk_cm_dt7 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+	CONSTRAINT fk_x2 FOREIGN KEY(x_coord_cd)
+ 		REFERENCES cmplnt_lat_lon(x_coord_cd),
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
 ) ENGINE=INNODB;
 
+-- fixme below; need to fix constraints
 DROP TABLE IF EXISTS sus_age_info;
 CREATE TABLE IF NOT EXISTS sus_age_info(
-	cmplnt_num			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY
-    cmplnt_fr_dt		DATE, -- FIXME, MAKE INTO FOREIGN KEY?
-    x_coord_cd			INT UNSIGNED, -- FIXME, MAKE INTO FOREIGN KEY FROM coords TABLE
+	cmplnt_num			INT UNSIGNED, 
+    cmplnt_fr_dt		DATE, 
+    x_coord_cd			INT UNSIGNED,
     susp_age_group 		VARCHAR(10),
+	CONSTRAINT fk_cm_dt_x FOREIGN KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
+ 		REFERENCES sus_info(cmplnt_num, cmplnt_fr_dt, x_coord_cd),
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group)
 ) ENGINE=INNODB;
 
 /* LOAD DATA INTO MEGA TABLE*/
--- to allow the data to load without timing out, need to set DBMS connection read timeout interval (in seconds) to 0: 
--- MySQLWorkbench > Preferences > SQL Editor
--- THIS WORKS!
 LOAD DATA INFILE '/Users/shaymilner/Library/Mobile Documents/com~apple~CloudDocs/Documents/Fall 2021/CS3265/Projects/Project 2/- data/NYPD_Complaint_Data_Historic.csv' INTO TABLE crimes_mega
 	FIELDS TERMINATED BY ','
 	OPTIONALLY ENCLOSED BY '"'
@@ -266,15 +303,15 @@ INSERT INTO offense_type
 SELECT DISTINCT cmplnt_num, ky_cd, ofns_desc
 FROM crimes_mega;
 
--- internal classification
-INSERT INTO intrnl_class
-SELECT DISTINCT cmplnt_num, pd_cd, pd_desc, crm_atpt_cptd_cd
-FROM crimes_mega
-WHERE pd_cd IS NOT NULL;
-
 -- law classification
 INSERT INTO law_class
 SELECT DISTINCT pd_cd, law_cat_cd
+FROM crimes_mega
+WHERE pd_cd IS NOT NULL;
+
+-- internal classification
+INSERT INTO intrnl_class
+SELECT DISTINCT cmplnt_num, pd_cd, pd_desc, crm_atpt_cptd_cd
 FROM crimes_mega
 WHERE pd_cd IS NOT NULL;
 
@@ -320,17 +357,18 @@ SELECT DISTINCT cmplnt_num, transit_district
 FROM crimes_mega
 WHERE transit_district IS NOT NULL;
 
+-- lat/long
+INSERT INTO cmplnt_lat_lon
+SELECT DISTINCT x_coord_cd, y_coord_cd, latitude, longitude
+FROM crimes_mega
+WHERE x_coord_cd IS NOT NULL;
+
 -- x, y locations (fixme)
 INSERT INTO cmplnt_x_y
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, y_coord_cd
 FROM crimes_mega
 WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
--- lat/long
-INSERT INTO cmplnt_lat_lon
-SELECT DISTINCT x_coord_cd, y_coord_cd, latitude, longitude
-FROM crimes_mega
-WHERE x_coord_cd IS NOT NULL;
 
 -- precint/jurisdiction location
 INSERT INTO precint_loc
@@ -349,7 +387,7 @@ SELECT DISTINCT cmplnt_num, cmplnt_to_dt, x_coord_cd, vic_age_group, vic_race, v
 FROM crimes_mega
 WHERE cmplnt_to_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
--- suspect information need to run (FIX ME)
+-- suspect information need to run
 INSERT INTO sus_info
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_race, susp_sex
 FROM crimes_mega
