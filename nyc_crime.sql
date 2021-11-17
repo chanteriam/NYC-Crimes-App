@@ -79,8 +79,6 @@ CREATE TABLE IF NOT EXISTS intrnl_class(
     crm_atpt_cptd_cd	VARCHAR(10),
     CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
  		REFERENCES offense_type(cmplnt_num),
-	CONSTRAINT fk_pd_cd FOREIGN KEY(pd_cd)
-		REFERENCES law_class(pd_cd),
     PRIMARY KEY(cmplnt_num, pd_cd)
 ) ENGINE=INNODB;
 
@@ -200,6 +198,16 @@ CREATE TABLE IF NOT EXISTS precint_loc(
     PRIMARY KEY(cmplnt_num, addr_pct_cd)
 ) ENGINE=INNODB;
 
+DROP TABLE IF EXISTS station;
+CREATE TABLE IF NOT EXISTS station(
+	cmplnt_num			INT UNSIGNED,
+    addr_pct_cd			TINYINT UNSIGNED,
+	station_name		VARCHAR(35),
+    CONSTRAINT fk_cm_addr FOREIGN KEY(cmplnt_num, addr_pct_cd)
+		REFERENCES precint_loc(cmplnt_num, addr_pct_cd),
+	PRIMARY KEY(cmplnt_num, addr_pct_cd)
+) ENGINE=INNODB;
+
 DROP TABLE IF EXISTS juris_loc;
 CREATE TABLE IF NOT EXISTS juris_loc(
 	cmplnt_num			INT UNSIGNED,
@@ -263,19 +271,33 @@ LOAD DATA INFILE '/Users/shaymilner/Library/Mobile Documents/com~apple~CloudDocs
 SET SQL_SAFE_UPDATES=0;
 
 UPDATE crimes_mega
-SET cmplnt_fr_dt = if(cmplnt_fr_dt != '', STR_TO_DATE(cmplnt_fr_dt, "%m/%d/%Y"), NULL),
-	cmplnt_to_dt = if(cmplnt_to_dt != '', STR_TO_DATE(cmplnt_to_dt, "%m/%d/%Y"), NULL),
-	rpt_dt = if(rpt_dt != '', STR_TO_DATE(rpt_dt, "%m/%d/%Y"), NULL),
-	addr_pct_cd = if(addr_pct_cd != '', CONVERT(addr_pct_cd, UNSIGNED), NULL),
-    pd_cd = if(pd_cd != '', CONVERT(pd_cd, UNSIGNED), NULL),
-    jurisdiction_code = if(jurisdiction_code != '', CONVERT(jurisdiction_code, UNSIGNED), NULL),
+SET cmplnt_fr_dt = IF(cmplnt_fr_dt != '', STR_TO_DATE(cmplnt_fr_dt, "%m/%d/%Y"), NULL),
+	cmplnt_to_dt = IF(cmplnt_to_dt != '', STR_TO_DATE(cmplnt_to_dt, "%m/%d/%Y"), NULL),
+	rpt_dt = IF(rpt_dt != '', STR_TO_DATE(rpt_dt, "%m/%d/%Y"), NULL),
+    crm_atpt_cptd_cd = IF(crm_atpt_cptd_cd != '', crm_atpt_cptd_cd, NULL),
+    ofns_desc = IF(ofns_desc != '', ofns_desc, NULL),
+	addr_pct_cd = IF(addr_pct_cd != '', CONVERT(addr_pct_cd, UNSIGNED), NULL),
+    loc_of_occur_desc = IF(loc_of_occur_desc != '', loc_of_occur_desc, NULL),
+    pd_cd = IF(pd_cd != '', CONVERT(pd_cd, UNSIGNED), NULL),
+    jurisdiction_code = IF(jurisdiction_code != '', CONVERT(jurisdiction_code, UNSIGNED), NULL),
 	housing_psa = IF(housing_psa != '' AND housing_psa != 'NA', 
 		CONVERT(replace(housing_psa,',',''), UNSIGNED), NULL),
+	station_name = IF(station_name != '', station_name, NULL),
+    patrol_boro = IF(patrol_boro != '', patrol_boro, NULL),
+    boro_nm = IF(boro_nm != '', boro_nm, NULL),
+    prem_typ_desc = IF(prem_typ_desc != '', prem_typ_desc, NULL),
+    hadevelopt = IF(hadevelopt != '', hadevelopt, NULL),
     x_coord_cd = IF(x_coord_cd != '', CONVERT(x_coord_cd, UNSIGNED), NULL),
     y_coord_cd = IF(y_coord_cd != '', CONVERT(y_coord_cd, UNSIGNED), NULL),
+    susp_age_group = IF(susp_age_group != '', susp_age_group, NULL),
+    susp_race = IF(susp_race != '', susp_race, NULL),
+    susp_sex = IF(susp_sex != '', susp_sex, NULL),
     transit_district = IF(transit_district != '', CONVERT(transit_district, UNSIGNED), NULL),
-    latitude = if(latitude != '', CONVERT(latitude, DECIMAL(12,10)), NULL),
-    longitude = if(longitude != '', CONVERT(longitude, DECIMAL(12,10)), NULL);
+    latitude = IF(latitude != '', CONVERT(latitude, DECIMAL(12,10)), NULL),
+    longitude = IF(longitude != '', CONVERT(longitude, DECIMAL(12,10)), NULL),
+	vic_age_group = IF(vic_age_group != '', vic_age_group, NULL),
+    vic_race = IF(vic_race != '', vic_race, NULL),
+    vic_sex = IF(vic_sex != '', vic_sex, NULL);
     
 ALTER TABLE crimes_mega
     CHANGE cmplnt_fr_dt cmplnt_fr_dt DATE NULL,
@@ -301,19 +323,21 @@ FROM crimes_mega;
 -- offense type
 INSERT INTO offense_type
 SELECT DISTINCT cmplnt_num, ky_cd, ofns_desc
-FROM crimes_mega;
-
--- law classification
-INSERT INTO law_class
-SELECT DISTINCT pd_cd, law_cat_cd
 FROM crimes_mega
-WHERE pd_cd IS NOT NULL;
+WHERE ofns_desc IS NOT NULL;
 
 -- internal classification
 INSERT INTO intrnl_class
 SELECT DISTINCT cmplnt_num, pd_cd, pd_desc, crm_atpt_cptd_cd
 FROM crimes_mega
 WHERE pd_cd IS NOT NULL;
+
+-- law classification
+INSERT INTO law_class
+SELECT DISTINCT pd_cd, law_cat_cd
+FROM crimes_mega
+WHERE pd_cd IS NOT NULL AND law_cat_cd;
+
 
 -- complaint date & time
 INSERT INTO cmplnt_time_date
@@ -333,7 +357,7 @@ SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, boro_nm, loc_of_occur_desc
 FROM crimes_mega
 WHERE cmplnt_fr_dt IS NOT NULL;
 
--- complaing housing psa; FIX ME: foreign key fails
+-- complaing housing psa
 INSERT INTO cmplnt_housing_loc
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, housing_psa
 FROM crimes_mega
@@ -376,6 +400,12 @@ SELECT DISTINCT cmplnt_num, addr_pct_cd, patrol_boro, boro_nm, station_name
 FROM crimes_mega
 WHERE addr_pct_cd IS NOT NULL;
 
+-- station
+INSERT INTO station
+SELECT DISTINCT cmplnt_num, addr_pct_cd, station_name
+FROM crimes_mega
+WHERE addr_pct_cd IS NOT NULL;
+
 INSERT INTO juris_loc
 SELECT DISTINCT cmplnt_num, jurisdiction_code, juris_desc
 FROM crimes_mega
@@ -391,14 +421,19 @@ WHERE cmplnt_to_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 INSERT INTO sus_info
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_race, susp_sex
 FROM crimes_mega
-WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
+WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL AND susp_race IS NOT NULL AND susp_sex IS NOT NULL;
 
 INSERT INTO sus_age_info
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group
 FROM crimes_mega
-WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
+WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL AND susp_age_group IS NOT NULL;
 
 SET SQL_SAFE_UPDATES=1;
+
+
+select *
+from offense_type
+where ofns_desc = ''
 
 
 /* CREATING ADVANCED FEATURES */
