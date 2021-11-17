@@ -1,4 +1,6 @@
--- New York City Police Crime Data Historic: 2006-2017 DB Normalization
+/* New York City Police Crime Data Historic: 2006-2017 DB Normalization */
+-- Group members: Chanteria Milner and Sneh Patel
+-- CS3265 - Project 2
 
 /* CREATE & SELCT DATABASE */
 DROP DATABASE IF EXISTS NYCCrimes;
@@ -162,7 +164,6 @@ CREATE TABLE IF NOT EXISTS cmplnt_trans_distr(
     PRIMARY KEY(cmplnt_num)
 ) ENGINE=INNODB;
 
--- fixme below; need to fix constraints
 DROP TABLE IF EXISTS cmplnt_lat_lon;
 CREATE TABLE IF NOT EXISTS cmplnt_lat_lon(
 	x_coord_cd			INT UNSIGNED,
@@ -239,7 +240,6 @@ CREATE TABLE IF NOT EXISTS sus_info(
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
 ) ENGINE=INNODB;
 
--- fixme below; need to fix constraints
 DROP TABLE IF EXISTS sus_age_info;
 CREATE TABLE IF NOT EXISTS sus_age_info(
 	cmplnt_num			INT UNSIGNED, 
@@ -259,7 +259,7 @@ LOAD DATA INFILE '/Users/shaymilner/Library/Mobile Documents/com~apple~CloudDocs
     IGNORE 1 LINES;
 
 
--- FIX THE DATA TYPES
+-- FIXING THE DATA TYPES
 SET SQL_SAFE_UPDATES=0;
 
 UPDATE crimes_mega
@@ -291,8 +291,8 @@ ALTER TABLE crimes_mega
     CHANGE latitude latitude DECIMAL(12,10),
     CHANGE longitude longitude DECIMAL(12,10);
 
-/* POPULATING NORMALIZED TABLES FROM MEGA TABLE */
 
+/* POPULATING NORMALIZED TABLES FROM MEGA TABLE */
 -- unused attributes
 INSERT INTO unused_attrs
 SELECT lat_lon
@@ -399,3 +399,12 @@ FROM crimes_mega
 WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
 SET SQL_SAFE_UPDATES=1;
+
+
+/* CREATING ADVANCED FEATURES */
+-- stored procedures
+
+-- views
+
+-- triggers
+
