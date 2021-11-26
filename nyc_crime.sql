@@ -430,12 +430,63 @@ WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL AND susp_age_group IS 
 
 SET SQL_SAFE_UPDATES=1;
 
-
-
 /* CREATING ADVANCED FEATURES */
 -- stored procedures
+DROP procedure IF EXISTS getComplaint;
+DELIMITER //
+CREATE PROCEDURE getComplaint(IN numb INT)
+BEGIN
+SELECT 	sus_info.cmplnt_num,
+		sus_info.cmplnt_fr_dt,
+		susp_age_group,
+		susp_race,
+		susp_sex
+FROM sus_info JOIN sus_age_info
+	ON sus_info.cmplnt_num = sus_age_info.cmplnt_num AND
+    sus_info.cmplnt_fr_dt = sus_age_info.cmplnt_fr_dt AND
+    sus_info.x_coord_cd = sus_age_info.x_coord_cd
+WHERE sus_info.cmplnt_num = numb;
+END //
+DELIMITER ;
 
--- views
+-- testing procedure 1
+CALL getComplaint(325341655);
+
+
+-- Views
+
+-- View to get data to verify Mega Table. Saves the user having to make a repetitive query and insulates the database from
+-- user generated queries on our mega table.
+DROP VIEW IF EXISTS mega; 
+CREATE VIEW mega AS
+SELECT * 
+FROM crimes_mega 
+LIMIT 10;
+
+-- test view
+SELECT * FROM mega;
+
+-- view to see offense types codes and descriptions
+DROP VIEW IF EXISTS offense;
+CREATE VIEW offense AS
+SELECT DISTINCT ky_cd, ofns_desc
+FROM offense_type
+WHERE ofns_desc IS NOT NULL
+ORDER BY ky_cd;
+
+-- test view
+SELECT * FROM offense;
+
+-- view to see law classification codes and descriptions
+DROP VIEW IF EXISTS law;
+CREATE VIEW law AS
+SELECT DISTINCT *
+FROM law_class
+WHERE pd_cd IS NOT NULL
+ORDER BY pd_cd;
+
+-- test view
+SELECT * FROM law;
 
 -- triggers
 
