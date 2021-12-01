@@ -55,12 +55,22 @@ CREATE TABLE IF NOT EXISTS unused_attrs (
 	lat_lon				VARCHAR(40)
 ) ENGINE=INNODB;
 
+-- table that holds every complaint number
+DROP TABLE IF EXISTS cmplaint_nums;
+CREATE TABLE IF NOT EXISTS cmplaint_nums (
+	cmplnt_num			INT UNSIGNED,
+    PRIMARY KEY (cmplnt_num)
+) ENGINE=INNODB;
+
 -- crime type information tables
 DROP TABLE IF EXISTS offense_type;
 CREATE TABLE IF NOT EXISTS offense_type (
 	cmplnt_num			INT UNSIGNED,
     ky_cd				SMALLINT UNSIGNED,
     ofns_desc			VARCHAR(40),
+	CONSTRAINT fk_complaint FOREIGN KEY(cmplnt_num)
+ 		REFERENCES cmplaint_nums(cmplnt_num)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, ky_cd)
 ) ENGINE=INNODB;
 
@@ -78,9 +88,11 @@ CREATE TABLE IF NOT EXISTS intrnl_class(
     pd_desc				VARCHAR(75),
     crm_atpt_cptd_cd	VARCHAR(10),
     CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
- 		REFERENCES offense_type(cmplnt_num),
+ 		REFERENCES offense_type(cmplnt_num)
+        ON DELETE CASCADE,
 	CONSTRAINT fk_pd_cd FOREIGN KEY(pd_cd)
-		REFERENCES law_class(pd_cd),
+		REFERENCES law_class(pd_cd)
+		ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, pd_cd)
 ) ENGINE=INNODB;
 
@@ -94,7 +106,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_time_date(
     cmplnt_to_dt		DATE,
     cmplnt_to_tm		TIME,
     CONSTRAINT fk_cm_num2 FOREIGN KEY(cmplnt_num)
- 		REFERENCES offense_type(cmplnt_num),
+ 		REFERENCES offense_type(cmplnt_num)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -105,9 +118,11 @@ CREATE TABLE IF NOT EXISTS cmplnt_rpt_dt(
     pd_cd				SMALLINT UNSIGNED,
     rpt_dt				DATE,
     CONSTRAINT fk_cm_dt FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
- 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt)
+        ON DELETE CASCADE,
 	CONSTRAINT fk_pd_cd2 FOREIGN KEY(pd_cd)
- 		REFERENCES law_class(pd_cd),
+ 		REFERENCES law_class(pd_cd)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd)
 ) ENGINE=INNODB;
 
@@ -118,7 +133,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_loc(
     boro_nm			VARCHAR(15),
     loc_of_occur_desc	VARCHAR(15),
 	CONSTRAINT fk_cm_dt2 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
- 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt)
+        ON DELETE CASCADE,
 	PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -128,7 +144,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_housing_loc(
     cmplnt_fr_dt		DATE,
     housing_psa			MEDIUMINT UNSIGNED,
     CONSTRAINT fk_cm_dt3 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
- 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -138,7 +155,8 @@ CREATE TABLE IF NOT EXISTS housing_dev(
     cmplnt_fr_dt		DATE,
     hadevelopt			VARCHAR(50),
     CONSTRAINT fk_cm_dt4 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
- 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -149,9 +167,11 @@ CREATE TABLE IF NOT EXISTS cmplnt_prem_type(
     pd_cd				SMALLINT UNSIGNED,
     prem_typ_desc		VARCHAR(30),
 	CONSTRAINT fk_cm_dt5 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
- 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt)
+        ON DELETE CASCADE,
 	CONSTRAINT fk_pd_cd3 FOREIGN KEY(pd_cd)
- 		REFERENCES law_class(pd_cd),
+ 		REFERENCES law_class(pd_cd)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, pd_cd)
 ) ENGINE=INNODB;
 
@@ -160,7 +180,8 @@ CREATE TABLE IF NOT EXISTS cmplnt_trans_distr(
 	cmplnt_num			INT UNSIGNED,
     transit_district	TINYINT UNSIGNED,
 	CONSTRAINT fk_cm_num3 FOREIGN KEY(cmplnt_num)
- 		REFERENCES offense_type(cmplnt_num),
+ 		REFERENCES offense_type(cmplnt_num)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num)
 ) ENGINE=INNODB;
 
@@ -180,9 +201,11 @@ CREATE TABLE IF NOT EXISTS cmplnt_x_y(
     x_coord_cd			INT UNSIGNED,
     y_coord_cd			INT UNSIGNED,
 	CONSTRAINT fk_cm_dt6 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
- 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt)
+        ON DELETE CASCADE,
 	CONSTRAINT fk_x_y FOREIGN KEY(x_coord_cd, y_coord_cd)
- 		REFERENCES cmplnt_lat_lon(x_coord_cd, y_coord_cd),
+ 		REFERENCES cmplnt_lat_lon(x_coord_cd, y_coord_cd)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt)
 ) ENGINE=INNODB;
 
@@ -196,7 +219,8 @@ CREATE TABLE IF NOT EXISTS precint_loc(
     boro_nm				VARCHAR(15),
     station_name		VARCHAR(35),
 	CONSTRAINT fk_cm_num4 FOREIGN KEY(cmplnt_num)
- 		REFERENCES offense_type(cmplnt_num),
+ 		REFERENCES offense_type(cmplnt_num)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, addr_pct_cd)
 ) ENGINE=INNODB;
 
@@ -206,7 +230,8 @@ CREATE TABLE IF NOT EXISTS station(
     addr_pct_cd			TINYINT UNSIGNED,
 	station_name		VARCHAR(35),
     CONSTRAINT fk_cm_addr FOREIGN KEY(cmplnt_num, addr_pct_cd)
-		REFERENCES precint_loc(cmplnt_num, addr_pct_cd),
+		REFERENCES precint_loc(cmplnt_num, addr_pct_cd)
+        ON DELETE CASCADE,
 	PRIMARY KEY(cmplnt_num, addr_pct_cd)
 ) ENGINE=INNODB;
 
@@ -216,7 +241,8 @@ CREATE TABLE IF NOT EXISTS juris_loc(
     jurisdiction_code 	TINYINT UNSIGNED,
     juris_desc			VARCHAR(40),
 	CONSTRAINT fk_cm_num5 FOREIGN KEY(cmplnt_num)
- 		REFERENCES offense_type(cmplnt_num),
+ 		REFERENCES offense_type(cmplnt_num)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, jurisdiction_code)
 ) ENGINE=INNODB;
 
@@ -230,9 +256,11 @@ CREATE TABLE IF NOT EXISTS vic_info(
 	vic_race			VARCHAR(35),
 	vic_sex				CHAR(1),
 	CONSTRAINT fk_cm_num6 FOREIGN KEY(cmplnt_num)
- 		REFERENCES offense_type(cmplnt_num),
+ 		REFERENCES offense_type(cmplnt_num)
+        ON DELETE CASCADE,
 	CONSTRAINT fk_x FOREIGN KEY(x_coord_cd)
- 		REFERENCES cmplnt_lat_lon(x_coord_cd),
+ 		REFERENCES cmplnt_lat_lon(x_coord_cd)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_to_dt, x_coord_cd)
 ) ENGINE=INNODB;
 
@@ -244,9 +272,11 @@ CREATE TABLE IF NOT EXISTS sus_info(
 	susp_race			VARCHAR(35),
     susp_sex			CHAR(1),
 	CONSTRAINT fk_cm_dt7 FOREIGN KEY(cmplnt_num, cmplnt_fr_dt)
- 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt),
+ 		REFERENCES cmplnt_time_date(cmplnt_num, cmplnt_fr_dt)
+        ON DELETE CASCADE,
 	CONSTRAINT fk_x2 FOREIGN KEY(x_coord_cd)
- 		REFERENCES cmplnt_lat_lon(x_coord_cd),
+ 		REFERENCES cmplnt_lat_lon(x_coord_cd)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
 ) ENGINE=INNODB;
 
@@ -257,8 +287,18 @@ CREATE TABLE IF NOT EXISTS sus_age_info(
     x_coord_cd			INT UNSIGNED,
     susp_age_group 		VARCHAR(10),
 	CONSTRAINT fk_cm_dt_x FOREIGN KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
- 		REFERENCES sus_info(cmplnt_num, cmplnt_fr_dt, x_coord_cd),
+ 		REFERENCES sus_info(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
+        ON DELETE CASCADE,
     PRIMARY KEY(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group)
+) ENGINE=INNODB;
+
+-- crime data audit table
+DROP TABLE IF EXISTS crime_audit;
+CREATE TABLE IF NOT EXISTS crime_audit (
+	audit_id	   		INT AUTO_INCREMENT,
+    cmplnt_num			INT UNSIGNED UNIQUE,
+    delete_date			DATE,
+    PRIMARY KEY(audit_id)
 ) ENGINE=INNODB;
 
 /* LOAD DATA INTO MEGA TABLE*/
@@ -320,6 +360,11 @@ ALTER TABLE crimes_mega
 -- unused attributes
 INSERT INTO unused_attrs
 SELECT lat_lon
+FROM crimes_mega;
+
+-- complaint numbers
+INSERT INTO cmplaint_nums
+SELECT DISTINCT cmplnt_num
 FROM crimes_mega;
 
 -- offense type
@@ -428,10 +473,9 @@ SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group
 FROM crimes_mega
 WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL AND susp_age_group IS NOT NULL;
 
-SET SQL_SAFE_UPDATES=1;
-
 /* CREATING ADVANCED FEATURES */
--- stored procedures
+/* stored procedures*/
+-- retrieval procedure
 DROP procedure IF EXISTS getComplaint;
 DELIMITER //
 CREATE PROCEDURE getComplaint(IN numb INT)
@@ -449,12 +493,25 @@ WHERE sus_info.cmplnt_num = numb;
 END //
 DELIMITER ;
 
--- testing procedure 1
-CALL getComplaint(325341655);
+-- insert procedure; NEED TO FIX
+DROP PROCEDURE IF EXISTS insert_proc(
+	IN cmplnt_num INT UNSIGNED, IN cmplnt_fr_dt DATE, IN cmplnt_fr_tm TIME,
+    IN cmplnt_to_dt DATE, IN cmplnt_to_tm TIME, IN addr_pct_cd TINYINT UNSIGNED, 
+    IN rpt_dt DATE, IN ky_cd SMALLINT UNSIGNED, IN ofns_desc VARCHAR(40), 
+    IN pd_cd SMALLINT UNSIGNED, IN pd_desc VARCHAR(75), IN crm_atpt_cptd_cd VARCHAR(10), 
+    IN law_cat_cd VARCHAR(15), IN boro_nm VARCHAR(15), IN loc_of_occur_desc VARCHAR(15), 
+    IN prem_typ_desc VARCHAR(30), IN juris_desc VARCHAR(40), IN jurisdiction_code TINYINT UNSIGNED, 
+    IN hadevelopt VARCHAR(50), IN housing_psa MEDIUMINT UNSIGNED, IN x_coord_cd INT UNSIGNED, 
+    IN y_coord_cd INT UNSIGNED, IN susp_age_group VARCHAR(10), IN susp_race VARCHAR(35), 
+    IN susp_sex CHAR(1), IN transit_district TINYINT UNSIGNED, IN latitude DECIMAL(12,10), 
+    IN longitude DECIMAL(12,10), IN patrol_boro VARCHAR(30), IN station_name VARCHAR(35), 
+    IN vic_age_group VARCHAR(10), IN vic_race VARCHAR(35), IN vic_sex CHAR(1)
+)
+DELIMITER //
 
+CREATE PROCEDURE insert_pro();
 
--- Views
-
+/* views */
 -- View to get data to verify Mega Table. Saves the user having to make a repetitive query and insulates the database from
 -- user generated queries on our mega table.
 DROP VIEW IF EXISTS mega; 
@@ -463,8 +520,6 @@ SELECT *
 FROM crimes_mega 
 LIMIT 10;
 
--- test view
-SELECT * FROM mega;
 
 -- view to see offense types codes and descriptions
 DROP VIEW IF EXISTS offense;
@@ -474,8 +529,6 @@ FROM offense_type
 WHERE ofns_desc IS NOT NULL
 ORDER BY ky_cd;
 
--- test view
-SELECT * FROM offense;
 
 -- view to see law classification codes and descriptions
 DROP VIEW IF EXISTS law;
@@ -485,8 +538,25 @@ FROM law_class
 WHERE pd_cd IS NOT NULL
 ORDER BY pd_cd;
 
--- test view
-SELECT * FROM law;
 
--- triggers
+/* triggers */
+-- delete trigger
+DROP TRIGGER IF EXISTS cmplaintnums_after_delete;
+DELIMITER //
+
+CREATE TRIGGER cmplaintnums_after_delete
+AFTER DELETE
+ON cmplaint_nums
+FOR EACH ROW
+BEGIN
+	INSERT INTO crimes_audit(cmplnt_num, delete_date)
+    VALUES (OLD.cmplnt_num, NOW());
+END //
+
+DELIMITER ;
+
+-- insert trigger
+
+SET SQL_SAFE_UPDATES=1;
+
 
