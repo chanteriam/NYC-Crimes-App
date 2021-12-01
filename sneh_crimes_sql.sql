@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS intrnl_class(
     crm_atpt_cptd_cd	VARCHAR(10),
     CONSTRAINT fk_cm_num FOREIGN KEY(cmplnt_num)
  		REFERENCES offense_type(cmplnt_num),
+	CONSTRAINT fk_pd_cd FOREIGN KEY(pd_cd)
+		REFERENCES law_class(pd_cd),
     PRIMARY KEY(cmplnt_num, pd_cd)
 ) ENGINE=INNODB;
 
@@ -322,21 +324,19 @@ FROM crimes_mega;
 -- offense type
 INSERT INTO offense_type
 SELECT DISTINCT cmplnt_num, ky_cd, ofns_desc
+FROM crimes_mega;
+
+-- law classification
+INSERT INTO law_class
+SELECT DISTINCT pd_cd, law_cat_cd
 FROM crimes_mega
-WHERE ofns_desc IS NOT NULL;
+WHERE pd_cd IS NOT NULL AND law_cat_cd IS NOT NULL;
 
 -- internal classification
 INSERT INTO intrnl_class
 SELECT DISTINCT cmplnt_num, pd_cd, pd_desc, crm_atpt_cptd_cd
 FROM crimes_mega
 WHERE pd_cd IS NOT NULL;
-
--- law classification
-INSERT INTO law_class
-SELECT DISTINCT pd_cd, law_cat_cd
-FROM crimes_mega
-WHERE pd_cd IS NOT NULL AND law_cat_cd;
-
 
 -- complaint date & time
 INSERT INTO cmplnt_time_date
@@ -386,14 +386,13 @@ SELECT DISTINCT x_coord_cd, y_coord_cd, latitude, longitude
 FROM crimes_mega
 WHERE x_coord_cd IS NOT NULL;
 
--- x, y locations (fixme)
+-- x, y locations 
 INSERT INTO cmplnt_x_y
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, y_coord_cd
 FROM crimes_mega
 WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
-
--- precint/jurisdiction location
+-- precint location
 INSERT INTO precint_loc
 SELECT DISTINCT cmplnt_num, addr_pct_cd, patrol_boro, boro_nm, station_name
 FROM crimes_mega
@@ -405,6 +404,7 @@ SELECT DISTINCT cmplnt_num, addr_pct_cd, station_name
 FROM crimes_mega
 WHERE addr_pct_cd IS NOT NULL;
 
+-- jurisdiction location
 INSERT INTO juris_loc
 SELECT DISTINCT cmplnt_num, jurisdiction_code, juris_desc
 FROM crimes_mega
@@ -416,11 +416,11 @@ SELECT DISTINCT cmplnt_num, cmplnt_to_dt, x_coord_cd, vic_age_group, vic_race, v
 FROM crimes_mega
 WHERE cmplnt_to_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
--- suspect information need to run
+-- suspect information 
 INSERT INTO sus_info
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_race, susp_sex
 FROM crimes_mega
-WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL AND susp_race IS NOT NULL AND susp_sex IS NOT NULL;
+WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL;
 
 INSERT INTO sus_age_info
 SELECT DISTINCT cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group
@@ -429,36 +429,74 @@ WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL AND susp_age_group IS 
 
 SET SQL_SAFE_UPDATES=1;
 
-
-select *
-from offense_type
-where ofns_desc = '';
-
-
 /* CREATING ADVANCED FEATURES */
 -- stored procedures
 DROP procedure IF EXISTS getComplaint;
 DELIMITER //
 CREATE PROCEDURE getComplaint(IN numb INT)
 BEGIN
-SELECT 	cmplnt_num,
-		cmplnt_fr_dt,
+SELECT 	sus_info.cmplnt_num,
+		sus_info.cmplnt_fr_dt,
 		susp_age_group,
 		susp_race,
 		susp_sex
-FROM crimes_mega
-WHERE cmplnt_num = numb;
+FROM sus_info JOIN sus_age_info
+	ON sus_info.cmplnt_num = sus_age_info.cmplnt_num AND
+    sus_info.cmplnt_fr_dt = sus_age_info.cmplnt_fr_dt AND
+    sus_info.x_coord_cd = sus_age_info.x_coord_cd
+WHERE sus_info.cmplnt_num = numb;
 END //
 DELIMITER ;
 
-Call getComplaint(325341655);
+-- testing procedure 1
+CALL getComplaint(325341655);
 
-SELECT * 
-FROM crimes_mega
+-- Procedure Two: Find all complaint numbers linked to a certain offense type
+DROP procedure IF EXISTS getOffense;
+DELIMITER //
+CREATE PROCEDURE getOffense(IN offense VARCHAR(50))
+BEGIN
+SELECT 	cmplnt_num,
+		ofns_desc
+FROM offense_type
+WHERE ofns_desc = offense
 LIMIT 10;
+END //
+DELIMITER ;
+
+-- Testing Stored Procedure
+CALL getOffense("HARRASSMENT 2");
+
+
+-- Procedure to search by law type :Felony, Misdemeanor, etc
+DROP procedure IF EXISTS getLaw;
+DELIMITER //
+CREATE PROCEDURE getLaw(IN law VARCHAR(50))
+BEGIN
+SELECT 	cmplnt_num,
+		ofns_desc,
+        cmplnt_fr_dt,
+        law_cat_cd
+FROM crimes_mega
+WHERE law_cat_cd = law
+LIMIT 10;
+END //
+DELIMITER ;
+
+-- Testing Stored Procedure
+CALL getLaw("Felony");
+
+DROP procedure IF EXISTS deleteComplaint;
+DELIMITER //
+CREATE PROCEDURE deleteComplaint(IN comp INT)
+BEGIN
+DELETE FROM crimes_mega
+WHERE cmplnt_num = comp;
+END //
+DELIMITER ;
+
 
 -- Views
-
 -- View to get data to verify Mega Table. Saves the user having to make a repetitive query and insulates the database from
 -- user generated queries on our mega table.
 DROP VIEW IF EXISTS mega; 
@@ -467,10 +505,29 @@ SELECT *
 FROM crimes_mega 
 LIMIT 10;
 
--- View to get unique offense descriptions 
-DROP VIEW IF EXISTS offenses; 
-CREATE VIEW offenses AS
-SELECT DISTINCT ofns_desc
-FROM crimes_mega; 
+-- test view
+SELECT * FROM mega;
+
+-- view to see offense types codes and descriptions
+DROP VIEW IF EXISTS offense;
+CREATE VIEW offense AS
+SELECT DISTINCT ky_cd, ofns_desc
+FROM offense_type
+WHERE ofns_desc IS NOT NULL
+ORDER BY ky_cd;
+
+-- test view
+SELECT * FROM offense;
+
+-- view to see law classification codes and descriptions
+DROP VIEW IF EXISTS law;
+CREATE VIEW law AS
+SELECT DISTINCT *
+FROM law_class
+WHERE pd_cd IS NOT NULL
+ORDER BY pd_cd;
+
+-- test view
+SELECT * FROM law;
 
 -- triggers

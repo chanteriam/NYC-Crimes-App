@@ -35,7 +35,7 @@ try
   </head> 
 <!-- Everything inside the BODY tags are visible on page.-->
   <body>
-    <div id="navbar">
+    <div id="navbar" style="position:absolute; bottom:0; width: 100%;">
       <ul>
         <li><a href="index.html">Home</a></li>
         <li><a href="getMovie.php">MegaTable</a></li>
