@@ -495,12 +495,39 @@ WHERE sus_info.cmplnt_num = numb;
 END //
 DELIMITER ;
 
+-- Procedure Two: Find all complaint numbers linked to a certain offense type
+DROP procedure IF EXISTS getOffense;
+DELIMITER //
+CREATE PROCEDURE getOffense(IN offense VARCHAR(50))
+BEGIN
+	SELECT 	cmplnt_num,
+			ofns_desc, ky_cd
+	FROM offense_type
+	WHERE ofns_desc = offense
+	LIMIT 10;
+END //
+DELIMITER ;
+
+-- get law classification
+DROP procedure IF EXISTS getLaw;
+DELIMITER //
+CREATE PROCEDURE getLaw(IN law VARCHAR(50))
+BEGIN
+SELECT 	cmplnt_num,
+		ofns_desc,
+        cmplnt_fr_dt,
+        law_cat_cd
+FROM crimes_mega
+WHERE law_cat_cd = law
+LIMIT 10;
+END //
+DELIMITER ;
 
 -- insert procedure; handles insertion from front-end form
 DROP PROCEDURE IF EXISTS insert_proc;
 DELIMITER //
 
-CREATE PROCEDURE insert_pro(IN cmplnt_num INT UNSIGNED, IN cmplnt_fr_dt VARCHAR(10), IN cmplnt_fr_tm VARCHAR(10),
+CREATE PROCEDURE insert_proc(IN cmplnt_num INT UNSIGNED, IN cmplnt_fr_dt VARCHAR(10), IN cmplnt_fr_tm VARCHAR(10),
     IN cmplnt_to_dt VARCHAR(10), IN cmplnt_to_tm VARCHAR(10), IN addr_pct_cd VARCHAR(5), 
     IN rpt_dt VARCHAR(10), IN ky_cd SMALLINT UNSIGNED, IN ofns_desc VARCHAR(40), 
     IN pd_cd VARCHAR(10), IN pd_desc VARCHAR(75), IN crm_atpt_cptd_cd VARCHAR(10), 
