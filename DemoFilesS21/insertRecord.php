@@ -40,7 +40,6 @@ if (isset($_POST['f_submit'])) {
     $var_transit = $_POST['transit'];
     $var_lat = $_POST['lat'];
     $var_long = $_POST['long'];
-    $var_latlong = $_POST['latlong'];
     $var_patrol_borough = $_POST['patrol_borough'];
     $var_station = $_POST['station'];
     $var_victim_age = $_POST['victim_age'];
@@ -142,22 +141,22 @@ if (isset($_POST['f_submit'])) {
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_fr_dt">Complaint Start Date</label>
+            <label for="cmplnt_fr_dt">Complaint Start Date (DD/MM/YYYY)</label>
             <input type="text" class="form-control" name = "from_date" id="cmplnt_fr_dt">
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_fr_tm">Complaint Start Time</label>
+            <label for="cmplnt_fr_tm">Complaint Start Time (HH:SS:MM)</label>
             <input type="text" class="form-control" name = "from_time" id="cmplnt_fr_tm">
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_to_dt">Complaint End Date</label>
+            <label for="cmplnt_to_dt">Complaint End Date (DD/MM/YYYY)</label>
             <input type="text" class="form-control" name = "end_date" id="cmplnt_to_dt">
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_to_tm">Complaint End Time</label>
+            <label for="cmplnt_to_tm">Complaint End Time (HH:SS:MM)</label>
             <input type="text" class="form-control" name = "end_time" id="cmplnt_to_tm">
           </div>
 
@@ -167,7 +166,7 @@ if (isset($_POST['f_submit'])) {
           </div>
 
           <div class="form-group">
-            <label for="rpt_dt">Report Date</label>
+            <label for="rpt_dt">Report Date (DD/MM/YYYY)</label>
             <input type="text" class="form-control" name = "report_date" id="rpt_dt">
           </div>
 
@@ -262,7 +261,7 @@ if (isset($_POST['f_submit'])) {
           </div>
 
           <div class="form-group">
-            <label for="susp_sex">Suspect Sex</label>
+            <label for="susp_sex">Suspect Sex (M/F/U)</label>
             <input type="text" class="form-control" name = "suspect_sex" id="susp_sex">
           </div>
 
@@ -279,11 +278,6 @@ if (isset($_POST['f_submit'])) {
           <div class="form-group">
             <label for="longitude">Longitude</label>
             <input type="text" class="form-control" name = "long" id="longitude">
-          </div>
-
-          <div class="form-group">
-            <label for="lat_lon">Latitude and Longitude</label>
-            <input type="text" class="form-control" name = "latlong" id="lat_lon">
           </div>
 
           <div class="form-group">
@@ -307,7 +301,7 @@ if (isset($_POST['f_submit'])) {
           </div>
 
           <div class="form-group">
-            <label for="vic_sex">Victim Sex</label>
+            <label for="vic_sex">Victim Sex (M/F/U)</label>
             <input type="text" class="form-control" name = "victim_sex" id="vic_sex">
           </div>
 
