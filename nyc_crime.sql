@@ -484,9 +484,9 @@ CREATE PROCEDURE getComplaint(IN numb INT)
 BEGIN
 SELECT 	sus_info.cmplnt_num,
 		sus_info.cmplnt_fr_dt,
-		IF(susp_age_group IS NULL, 'Not available', susp_age_group) AS susp_age_group,
-		IF(susp_race IS NULL, 'Not available', susp_race) AS susp_race,
-		IF(susp_sex IS NULL, 'Not available', susp_sex) AS susp_sex
+		IF(susp_age_group IS NULL, 'UNAVAILABLE', susp_age_group) AS susp_age_group,
+		IF(susp_race IS NULL, 'UNAVAILABLE', susp_race) AS susp_race,
+		IF(susp_sex IS NULL, 'UNAVAILABLE', susp_sex) AS susp_sex
 FROM sus_info LEFT JOIN sus_age_info
 	ON sus_info.cmplnt_num = sus_age_info.cmplnt_num AND
     sus_info.cmplnt_fr_dt = sus_age_info.cmplnt_fr_dt AND
