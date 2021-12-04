@@ -41,7 +41,6 @@ if (isset($_POST['f_submit'])) {
     $var_transit = $_POST['transit'];
     $var_lat = $_POST['lat'];
     $var_long = $_POST['long'];
-    $var_latlong = $_POST['latlong'];
     $var_patrol_borough = $_POST['patrol_borough'];
     $var_station = $_POST['station'];
     $var_victim_age = $_POST['victim_age'];
@@ -181,181 +180,279 @@ if (isset($_POST['f_submit'])) {
         </div>
       </nav>
 
-<h1 style="text-align: center"> Insert Complaint </h1>
+<h1 style="text-align: center"> Complaint Insert Form </h1>
+<h3 style="text-align: center"> Please use this form to insert complaint information</h3>
       <div class="container">
         <form method="post">
           <div class="form-group">
-                <label for="cmplt_num">Complaint Number</label>
-                <input type="number" class="form-control" name="complaint_num" id="cmplt_num"> 
+              <label for="cmplt_num">
+                <b>Complaint Number</b>
+              </label>
+              <p>Persistent ID for each complaint</p>
+              <input type="number" class="form-control" name="complaint_num" id="cmplt_num"> 
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_fr_dt">Complaint Start Date</label>
+            <label for="cmplnt_fr_dt">
+                <b>Complaint Start Date (DD/MM/YYYY)</b>
+            </label>
+            <p>Exact date of occurrence for the reported event</p>
             <input type="text" class="form-control" name = "from_date" id="cmplnt_fr_dt">
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_fr_tm">Complaint Start Time</label>
+            <label for="cmplnt_fr_tm">
+              <b>Complaint Start Time (HH:MM:SS)</b>
+            </label>
+            <p>Exact time of occurrence for the reported event</p>
             <input type="text" class="form-control" name = "from_time" id="cmplnt_fr_tm">
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_to_dt">Complaint End Date</label>
+            <label for="cmplnt_to_dt">
+              <b>Complaint End Date (DD/MM/YYYY)</b>
+            </label>
+            <p>Ending date of occurrence for the reported event, if exact time of occurrence is unknown</p>
             <input type="text" class="form-control" name = "end_date" id="cmplnt_to_dt">
           </div>
 
           <div class="form-group">
-            <label for="cmplnt_to_tm">Complaint End Time</label>
+            <label for="cmplnt_to_tm">
+              <b>Complaint End Time (HH:MM:SS)</b>
+            </label>
+            <p>Ending time of occurrence for the reported event, if exact time of occurrence is unknown</p>
             <input type="text" class="form-control" name = "end_time" id="cmplnt_to_tm">
           </div>
 
           <div class="form-group">
-            <label for="addr_pct_cd">Precinct Code</label>
+            <label for="addr_pct_cd">
+              <b>Precinct Code (1-123)</b>
+            </label>
+            <p>The precinct in which the incident occurred</p>
             <input type="text" class="form-control" name = "precinct_code" id="addr_pct_cd">
           </div>
 
           <div class="form-group">
-            <label for="rpt_dt">Report Date</label>
+            <label for="rpt_dt">
+              <b>Report Date (DD/MM/YYYY)</b>
+            </label>
+            <p>Date event was reported to police</p>
             <input type="text" class="form-control" name = "report_date" id="rpt_dt">
           </div>
 
           <div class="form-group">
-            <label for="ky_cd">Key Code</label>
+            <label for="ky_cd">
+              <b>Offense Key Code (101-881)</b>
+            </label>
+            <p>Three digit offense classification code</p>
             <input type="number" class="form-control" name = "key_cd" id="ky_cd">
           </div>
 
           <div class="form-group">
-            <label for="ofns_desc">Offense Description</label>
+            <label for="ofns_desc">
+              <b>Offense Description</b>
+            </label>
+            <p>Description of offense corresponding with key code</p>
             <input type="text" class="form-control" name = "offense_desc" id="ofns_desc">
           </div>
 
           <div class="form-group">
-            <label for="pd_cd"> Pd Code</label>
+            <label for="pd_cd">
+              <b>Internal Classification Code (101-975)</b>
+            </label>
+            <p>Three digit internal classification code (more granular than Key Code)</p>
             <input type="text" class="form-control" name = "pd_cd" id="pd_cd">
           </div>
 
           <div class="form-group">
-            <label for="pd_desc">Pd Description</label>
+            <label for="pd_desc">
+              <b>Internal Classification Description</b>
+            </label>
+            <p>Description of internal classification corresponding with PD code</p>
             <input type="text" class="form-control" name = "pd_desc" id="pd_desc">
           </div>
 
           <div class="form-group">
-            <label for="crm_atpt_cptd_cd">Completion Code</label>
+            <label for="crm_atpt_cptd_cd">
+              <b>Crime Completion Code</b>
+            </label>
+            <p>Indicator of whether crime was successfully COMPLETED or ATTEMPTED, but failed or was interrupted prematurely</p>
             <input type="text" class="form-control" name = "completed_code" id="crm_atpt_cptd_cd">
           </div>
 
           <div class="form-group">
-            <label for="law_cat_cd">Law Category Code</label>
+            <label for="law_cat_cd">
+              <b>Law Category Code</b>
+            </label>
+            <p>Level of offense: felony, misdemeanor, violation</p>
             <input type="text" class="form-control" name = "law_category" id="law_cat_cd">
           </div>
 
           <div class="form-group">
-            <label for="boro_nm">Borough Name</label>
+            <label for="boro_nm">
+              <b>Borough Name</b>
+            </label>
+            <p>The name of the borough in which the incident occurred</p>
             <input type="text" class="form-control" name = "borough" id="boro_nm">
           </div>
 
           <div class="form-group">
-            <label for="loc_of_occur_desc">Location of Occurence</label>
+            <label for="loc_of_occur_desc">
+              <b>Location of Occurence</b>
+            </label>
+            <p>Specific location of occurrence in or around the premises: INSIDE, OPPOSITE OF, FRONT OF, REAR OF</p>
             <input type="text" class="form-control" name = "location_of_occurence" id="loc_of_occur_desc">
           </div>
 
           <div class="form-group">
-            <label for="prem_typ_desc">Premesis Type</label>
+            <label for="prem_typ_desc">
+              <b>Premesis Type</b>
+            </label>
+            <p>Specific description of premises; grocery store, residence, street, etc.</p>
             <input type="text" class="form-control" name = "premesis" id="prem_typ_desc">
           </div>
 
           <div class="form-group">
-            <label for="juris_desc">Jurisdiction</label>
+            <label for="juris_desc">
+              <b>Jurisdiction</b>
+            </label>
+            <p>Description of the jurisdiction code</p>
             <input type="text" class="form-control" name = "jurisdiction" id="juris_desc">
           </div>
 
           <div class="form-group">
-            <label for="jurisdiction_cd">Jurisdiction Code</label>
+            <label for="jurisdiction_cd">
+              <b>Jurisdiction Code</b>
+            </label>
+            <p>Jurisdiction responsible for incident. Either internal, like Police(0), Transit(1), and Housing(2); or external(3), like Correction, Port Authority, etc<p>
             <input type="text" class="form-control" name = "jurisdiction_code" id="jurisdiction_cd">
           </div>
 
           <div class="form-group">
-            <label for="parks_nm">Park Name</label>
+            <label for="parks_nm">
+              <b>Park Name</b>
+            </label>
+            <p>Name of NYC park, playground or greenspace of occurrence, if applicable</p>
             <input type="text" class="form-control" name = "park" id="parks_nm">
           </div>
 
           <div class="form-group">
-            <label for="hadevelopt">Housing Development</label>
+            <label for="hadevelopt">
+              <b>Housing Development</b>
+            </label>
+            <p>Name of NYCHA housing development of occurrence, if applicable</p>
             <input type="text" class="form-control" name = "housing_development" id="hadevelopt">
           </div>
 
           <div class="form-group">
-            <label for="housing_psa">Housing Code</label>
+            <label for="housing_psa">
+              <b>Housing Code</b>
+            </label>
+            <p>Development Level Code</p>
             <input type="number" class="form-control" name = "housing_code" id="housing_psa">
           </div>
 
           <div class="form-group">
-            <label for="x_coord_cd">X Coord</label>
+            <label for="x_coord_cd">
+              <b>X-Coordinate</b>
+            </label>
+            <p>X-coordinate for New York State Plane Coordinate System, Long Island Zone, NAD 83, units feet</p>
             <input type="text" class="form-control" name = "coordX" id="x_coord_cd">
           </div>
 
           <div class="form-group">
-            <label for="y_coord_cd">Y Coord</label>
+            <label for="y_coord_cd">
+              <b>Y-Coordinate</b>
+            </label>
+            <p>X-coordinate for New York State Plane Coordinate System, Long Island Zone, NAD 83, units feet</p>
             <input type="text" class="form-control" name = "coordY" id="y_coord_cd">
           </div>
 
           <div class="form-group">
-            <label for="susp_age_group">Suspect Age Group</label>
+            <label for="susp_age_group">
+              <b>Suspect Age Group</b>
+            </label>
+            <p>Suspect’s Age Group: <18, 18-24, 25-44, 45-64, 65+<p>
             <input type="text" class="form-control" name = "suspect_age" id="susp_age_group">
           </div>
 
           <div class="form-group">
-            <label for="susp_race">Suspect Race</label>
+            <label for="susp_race">
+              <b>Suspect Race</b>
+            </label>
+            <p>Suspect’s Race Description</p>
             <input type="text" class="form-control" name = "suspect_race" id="susp_race">
           </div>
 
           <div class="form-group">
-            <label for="susp_sex">Suspect Sex</label>
+            <label for="susp_sex">
+              <b>Suspect Sex</b>
+            </label>
+            <p>Suspect’s Sex Description: F=Female, M=Male, U=UNKNOWN</p>
             <input type="text" class="form-control" name = "suspect_sex" id="susp_sex">
           </div>
 
           <div class="form-group">
-            <label for="transit_district">Transit District</label>
+            <label for="transit_district">
+              <b>Transit District</b>
+            </label>
+            <p>Transit district in which the offense occurred</p>
             <input type="text" class="form-control" name = "transit" id="transit_district">
           </div>
 
           <div class="form-group">
-            <label for="latitude">Latitude</label>
+            <label for="latitude">
+              <b>Latitude</b>
+            </label>
+            <p>Midblock Latitude coordinate for Global Coordinate System, WGS 1984, decimal degrees</p>
             <input type="text" class="form-control" name = "lat" id="latitude">
           </div>
 
           <div class="form-group">
-            <label for="longitude">Longitude</label>
+            <label for="longitude">
+              <b>Longitude</b>
+            </label>
+            <p>Midblock Longitude coordinate for Global Coordinate System, WGS 1984, decimal degrees</p>
             <input type="text" class="form-control" name = "long" id="longitude">
           </div>
 
           <div class="form-group">
-            <label for="lat_lon">Latitude and Longitude</label>
-            <input type="text" class="form-control" name = "latlong" id="lat_lon">
-          </div>
-
-          <div class="form-group">
-            <label for="patrol_boro">Patrol Borough</label>
+            <label for="patrol_boro">
+              <b>Patrol Borough</b>
+            </label>
+            <p>The name of the patrol borough in which the incident occurred</p>
             <input type="text" class="form-control" name = "patrol_borough" id="patrol_boro">
           </div>
 
           <div class="form-group">
-            <label for="station_name">Station Name</label>
+            <label for="station_name">
+              <b>Station Name</b>
+            </label>
+            <p>Transit station name</p>
             <input type="text" class="form-control" name = "station" id="station_name">
           </div>
 
           <div class="form-group">
-            <label for="vic_age_group">Victim Age Group</label>
+            <label for="vic_age_group">
+              <b>Victim Age Group</b>
+            </label>
+            <p>Victim’s Age Group: <18, 18-24, 25-44, 45-64, 65+</p>
             <input type="text" class="form-control" name = "victim_age" id="vic_age_group">
           </div>
 
           <div class="form-group">
-            <label for="vic_race">Victim Race</label>
+            <label for="vic_race">
+              <b>Victim Race</b>
+            </label>
+            <p>Victim’s Race Description</p>
             <input type="text" class="form-control" name = "victim_race" id="vic_race">
           </div>
 
           <div class="form-group">
-            <label for="vic_sex">Victim Sex</label>
+            <label for="vic_sex">
+              <b>Victim Sex</b>
+            </label>
+            <p>Victim’s Sex Description (D=Business/Organization, E=PSNY/People of the State of New York, F=Female, M=Male)</p>
             <input type="text" class="form-control" name = "victim_sex" id="vic_sex">
           </div>
 

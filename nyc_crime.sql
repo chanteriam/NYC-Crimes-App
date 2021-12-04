@@ -296,7 +296,7 @@ CREATE TABLE IF NOT EXISTS sus_age_info(
 DROP TABLE IF EXISTS crime_audit;
 CREATE TABLE IF NOT EXISTS crime_audit (
 	audit_id	   		INT AUTO_INCREMENT,
-    cmplnt_num			INT UNSIGNED UNIQUE,
+    cmplnt_num			INT UNSIGNED,
     delete_date			DATE,
     PRIMARY KEY(audit_id)
 ) ENGINE=INNODB;
@@ -523,6 +523,16 @@ LIMIT 10;
 END //
 DELIMITER ;
 
+-- delete a cmplaint number
+DROP procedure IF EXISTS deleteComplaint;
+DELIMITER //
+CREATE PROCEDURE deleteComplaint(IN comp INT UNSIGNED)
+BEGIN
+DELETE FROM cmplaint_nums
+WHERE cmplnt_num = comp;
+END //
+DELIMITER ;
+
 -- insert procedure; handles insertion from front-end form
 DROP PROCEDURE IF EXISTS insert_proc;
 DELIMITER //
@@ -541,7 +551,8 @@ CREATE PROCEDURE insert_proc(IN cmplnt_num INT UNSIGNED, IN cmplnt_fr_dt VARCHAR
 BEGIN 
 	
     -- convert into correct data types
-    SET cmplnt_fr_dt = IF(cmplnt_fr_dt != '', STR_TO_DATE(cmplnt_fr_dt, "%m/%d/%Y"), NULL),
+    SET cmplnt_num = IF(cmplnt_num != '', cmplnt_num, NULL),
+		cmplnt_fr_dt = IF(cmplnt_fr_dt != '', STR_TO_DATE(cmplnt_fr_dt, "%m/%d/%Y"), NULL),
 		cmplnt_fr_tm = IF(cmplnt_fr_tm != '', CAST(cmplnt_fr_tm AS TIME), NULL),
 		cmplnt_to_dt = IF(cmplnt_to_dt != '', STR_TO_DATE(cmplnt_to_dt, "%m/%d/%Y"), NULL),
         cmplnt_to_tm = IF(cmplnt_to_tm != '', CAST(cmplnt_to_tm AS TIME), NULL),
@@ -587,6 +598,7 @@ BEGIN
 		CALL insert_cmplnt_loc(cmplnt_num, cmplnt_fr_dt, boro_nm, loc_of_occur_desc);
         CALL insert_cmplnt_housing_loc(cmplnt_num, cmplnt_fr_dt, housing_psa);
 		CALL insert_housing_dev(cmplnt_num, cmplnt_fr_dt, hadevelopt);
+        CALL insert_complaint_park(cmplnt_num, cmplnt_fr_dt, parks_nm);
         CALL insert_cmplnt_prem_type(cmplnt_num, cmplnt_fr_dt, pd_cd, prem_typ_desc);
 		CALL insert_cmplnt_trans_distr(cmplnt_num, transit_district);
 		CALL insert_cmplnt_lat_lon(x_coord_cd, y_coord_cd, latitude, longitude);
@@ -604,19 +616,27 @@ DELIMITER ;
 DROP PROCEDURE IF EXISTS insert_cmplaint_nums;
 
 DELIMITER //
-CREATE PROCEDURE insert_cmplaint_nums(IN cmplnt_num INT) 
+CREATE PROCEDURE insert_cmplaint_nums(IN num INT UNSIGNED) 
 BEGIN
-	INSERT INTO cmplaint_nums
-    VALUES(cmplnt_num);
+		DECLARE CONTINUE HANDLER FOR 1062       
+        SELECT "Duplicate value entered" AS msg;
+		
+        INSERT INTO cmplaint_nums
+		VALUES(num);
 END //
 DELIMITER ;
+
 
 -- inserting: offense_type
 DROP PROCEDURE IF EXISTS insert_offense_type;
 
 DELIMITER //
-CREATE PROCEDURE insert_offense_type(IN cmplnt_num INT, IN ky_cd INT UNSIGNED, IN ofns_desc VARCHAR(40)) 
+CREATE PROCEDURE insert_offense_type(IN cmplnt_num INT UNSIGNED, IN ky_cd SMALLINT UNSIGNED, 
+									 IN ofns_desc VARCHAR(40)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062       
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO offense_type
     VALUES(cmplnt_num, ky_cd, ofns_desc);
 END //
@@ -628,6 +648,9 @@ DROP PROCEDURE IF EXISTS insert_law_class;
 DELIMITER //
 CREATE PROCEDURE insert_law_class(IN pd_cd SMALLINT UNSIGNED, IN law_cat_cd VARCHAR(15)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO law_class
     VALUES(pd_cd, law_cat_cd);
 END //
@@ -640,6 +663,9 @@ DELIMITER //
 CREATE PROCEDURE insert_intrnl_class(IN cmplnt_num INT, IN pd_cd SMALLINT UNSIGNED, IN pd_desc VARCHAR(75), 
 									 IN crm_atpt_cptd_cd VARCHAR(10)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO intrnl_class
     VALUES(cmplnt_num, pd_cd, pd_desc, crm_atpt_cptd_cd);
 END //
@@ -652,6 +678,9 @@ DELIMITER //
 CREATE PROCEDURE insert_cmplnt_time_date(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN cmplnt_fr_tm TIME,
 										IN cmplnt_to_dt DATE, IN cmplnt_to_tm TIME) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_time_date
     VALUES(cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, cmplnt_to_dt, cmplnt_to_tm);
 END //
@@ -664,6 +693,9 @@ DELIMITER //
 CREATE PROCEDURE insert_cmplnt_rpt_dt(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN pd_cd SMALLINT UNSIGNED,
 										IN rpt_dt DATE) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_rpt_dt
     VALUES(cmplnt_num, cmplnt_fr_dt, pd_cd, rpt_dt);
 END //
@@ -676,6 +708,9 @@ DELIMITER //
 CREATE PROCEDURE insert_cmplnt_loc(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN boro_nm VARCHAR(15),
 									IN loc_of_occur_desc VARCHAR(15)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_loc
     VALUES(cmplnt_num, cmplnt_fr_dt, boro_nm, loc_of_occur_desc);
 END //
@@ -687,6 +722,9 @@ DROP PROCEDURE IF EXISTS insert_cmplnt_housing_loc;
 DELIMITER //
 CREATE PROCEDURE insert_cmplnt_housing_loc(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN housing_psa MEDIUMINT UNSIGNED) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_housing_loc
     VALUES(cmplnt_num, cmplnt_fr_dt, housing_psa);
 END //
@@ -698,8 +736,25 @@ DROP PROCEDURE IF EXISTS insert_housing_dev;
 DELIMITER //
 CREATE PROCEDURE insert_housing_dev(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN hadevelopt VARCHAR(50)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO housing_dev
     VALUES(cmplnt_num, cmplnt_fr_dt, hadevelopt);
+END //
+DELIMITER ;
+
+-- inserting: complaint_park
+DROP PROCEDURE IF EXISTS insert_complaint_park;
+
+DELIMITER //
+CREATE PROCEDURE insert_complaint_park(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN park VARCHAR(85)) 
+BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
+	INSERT INTO complaint_park
+    VALUES(cmplnt_num, cmplnt_fr_dt, park);
 END //
 DELIMITER ;
 
@@ -710,6 +765,9 @@ DELIMITER //
 CREATE PROCEDURE insert_cmplnt_prem_type(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN pd_cd SMALLINT UNSIGNED,
 										IN prem_type_desc VARCHAR(30)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_prem_type
     VALUES(cmplnt_num, cmplnt_fr_dt, pd_cd, prem_type_desc);
 END //
@@ -721,6 +779,9 @@ DROP PROCEDURE IF EXISTS insert_cmplnt_trans_distr;
 DELIMITER //
 CREATE PROCEDURE insert_cmplnt_trans_distr(IN cmplnt_num INT, IN transit_district TINYINT UNSIGNED) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_trans_distr
     VALUES(cmplnt_num, transit_district);
 END //
@@ -733,6 +794,9 @@ DELIMITER //
 CREATE PROCEDURE insert_cmplnt_lat_lon(IN x_coord_cd INT UNSIGNED, IN y_coord_cd INT UNSIGNED, IN latitude DECIMAL(12,10),
 										IN longitude DECIMAL(12,10)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_lat_lon
     VALUES(x_coord_cd, y_coord_cd, latitude, longitude);
 END //
@@ -744,6 +808,9 @@ DROP PROCEDURE IF EXISTS insert_cmplnt_x_y;
 DELIMITER //
 CREATE PROCEDURE insert_cmplnt_x_y(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN x_coord_cd INT UNSIGNED, IN y_coord_cd INT UNSIGNED) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO cmplnt_x_y
     VALUES(cmplnt_num, cmplnt_fr_dt, x_coord_cd, y_coord_cd);
 END //
@@ -756,6 +823,9 @@ DELIMITER //
 CREATE PROCEDURE insert_precint_loc(IN cmplnt_num INT, IN addr_pct_cd TINYINT UNSIGNED, IN patrol_boro VARCHAR(30),
 									IN boro_nm VARCHAR(15), station_name VARCHAR(35)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO precint_loc
     VALUES(cmplnt_num, addr_pct_cd, patrol_boro, boro_nm, station_name);
 END //
@@ -767,6 +837,9 @@ DROP PROCEDURE IF EXISTS insert_juris_loc;
 DELIMITER //
 CREATE PROCEDURE insert_juris_loc(IN cmplnt_num INT, IN jurisdiction_code TINYINT UNSIGNED, IN juris_desc VARCHAR(40)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO juris_loc
     VALUES(cmplnt_num, jurisdiction_code, juris_desc);
 END //
@@ -779,6 +852,9 @@ DELIMITER //
 CREATE PROCEDURE insert_vic_info(IN cmplnt_num INT, IN cmplnt_to_dt DATE, IN x_coord_cd INT UNSIGNED,
 											IN vic_age_group VARCHAR(10), IN vic_race VARCHAR(35), IN vic_sex CHAR(1)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO vic_info
     VALUES(cmplnt_num, cmplnt_to_dt, x_coord_cd, vic_age_group, vic_race, vic_sex);
 END //
@@ -791,6 +867,9 @@ DELIMITER //
 CREATE PROCEDURE insert_sus_info(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN x_coord_cd INT UNSIGNED,
 											IN susp_race VARCHAR(35), IN susp_sex CHAR(1)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO sus_info
     VALUES(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_race, susp_sex);
 END //
@@ -803,6 +882,9 @@ DELIMITER //
 CREATE PROCEDURE insert_sus_age_info(IN cmplnt_num INT, IN cmplnt_fr_dt DATE, IN x_coord_cd INT UNSIGNED,
 											IN susp_age_group VARCHAR(10)) 
 BEGIN
+	DECLARE CONTINUE HANDLER FOR 1062 
+    SELECT "Duplicate value entered" AS msg;
+    
 	INSERT INTO sus_age_info
     VALUES(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group);
 END //
@@ -837,7 +919,7 @@ WHERE pd_cd IS NOT NULL
 ORDER BY pd_cd;
 
 
-/* triggers */
+/* TRIGGERS */
 -- delete trigger
 DROP TRIGGER IF EXISTS cmplaintnums_after_delete;
 DELIMITER //
@@ -847,12 +929,439 @@ AFTER DELETE
 ON cmplaint_nums
 FOR EACH ROW
 BEGIN
-	INSERT INTO crimes_audit(cmplnt_num, delete_date)
+	INSERT INTO crime_audit(cmplnt_num, delete_date)
     VALUES (OLD.cmplnt_num, NOW());
 END //
 
 DELIMITER ;
 
--- insert trigger
+-- insert triggers
+-- cmplaint_nums
+DROP TRIGGER IF EXISTS cmplaintnums_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplaintnums_before_insert
+BEFORE INSERT
+ON cmplaint_nums
+FOR EACH ROW
+BEGIN
+	IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+END // 
+
+DELIMITER ;
+
+
+-- offense_type
+DROP TRIGGER IF EXISTS offensetype_before_insert;
+DELIMITER //
+
+CREATE TRIGGER offensetype_before_insert
+BEFORE INSERT
+ON offense_type
+FOR EACH ROW
+BEGIN
+	IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+    
+    IF NEW.ky_cd IS NULL THEN
+		SET NEW.ky_cd = 0;
+	END IF;
+    
+    IF (NEW.cmplnt_num = 0 OR NEW.ky_cd = 0) AND NEW.ofns_desc IS NULL THEN
+		SET NEW.ofns_desc = "UNAVAILABLE";
+	END IF;
+    
+END // 
+DELIMITER ;
+
+-- law_class
+DROP TRIGGER IF EXISTS lawclass_before_insert;
+DELIMITER //
+
+CREATE TRIGGER lawclass_before_insert
+BEFORE INSERT
+ON law_class
+FOR EACH ROW
+BEGIN
+    IF NEW.pd_cd IS NULL THEN
+		SET NEW.pd_cd = 0;
+	END IF;
+    
+    IF NEW.law_cat_cd IS NULL THEN
+		SET NEW.law_cat_cd = "UNAVAILABLE";
+	END IF;
+
+END // 
+DELIMITER ;
+
+
+-- intrnl_class
+DROP TRIGGER IF EXISTS intrnlclass_before_insert;
+DELIMITER //
+
+CREATE TRIGGER intrnlclass_before_insert
+BEFORE INSERT
+ON intrnl_class
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+    
+    IF NEW.pd_cd IS NULL THEN
+		SET NEW.pd_cd = 0;
+	END IF;
+END // 
+DELIMITER ;
+
+-- cmplnt_time_date
+DROP TRIGGER IF EXISTS cmplnttimedate_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplnttimedate_before_insert
+BEFORE INSERT
+ON cmplnt_time_date
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+    
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+END // 
+DELIMITER ;
+
+-- cmplnt_rpt_dt
+DROP TRIGGER IF EXISTS cmplntrptdt_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplntrptdt_before_insert
+BEFORE INSERT
+ON cmplnt_rpt_dt
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+    
+    IF NEW.pd_cd IS NULL THEN
+		SET NEW.pd_cd = 0;
+	END IF;
+    
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+END // 
+DELIMITER ;
+
+-- cmplnt_loc
+DROP TRIGGER IF EXISTS cmplntloc_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplntloc_before_insert
+BEFORE INSERT
+ON cmplnt_loc
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+END // 
+DELIMITER ;
+
+-- cmplnt_housing_loc
+DROP TRIGGER IF EXISTS cmplnthousingloc_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplnthousingloc_before_insert
+BEFORE INSERT
+ON cmplnt_housing_loc
+FOR EACH ROW
+BEGIN
+	DECLARE new_housing_psa MEDIUMINT UNSIGNED;
+    
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+    
+    IF (NEW.cmplnt_num = 0 OR NEW.cmplnt_fr_dt = NOW()) AND NEW.housing_psa IS NULL THEN
+		SET NEW.housing_psa = 0;
+	END IF;
+		
+END // 
+DELIMITER ;
+
+-- housing_dev
+DROP TRIGGER IF EXISTS housingdev_before_insert;
+DELIMITER //
+
+CREATE TRIGGER housingdev_before_insert
+BEFORE INSERT
+ON housing_dev
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+    
+    IF (NEW.cmplnt_num = 0 OR NEW.cmplnt_fr_dt = NOW()) AND NEW.hadevelopt IS NULL THEN
+		SET NEW.hadevelopt = "UNAVAILABLE";
+	END IF;
+END // 
+DELIMITER ;
+
+-- complaint_park
+DROP TRIGGER IF EXISTS complaintpark_before_insert;
+DELIMITER //
+
+CREATE TRIGGER complaintpark_before_insert
+BEFORE INSERT
+ON complaint_park
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+    
+    IF (NEW.cmplnt_num = 0 OR NEW.cmplnt_fr_dt = NOW()) AND NEW.parks_nm IS NULL THEN
+		SET NEW.parks_nm = "UNAVAILABLE";
+	END IF;
+END // 
+DELIMITER ;
+
+-- cmplnt_prem_type
+DROP TRIGGER IF EXISTS cmplntpremtype_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplntpremtype_before_insert
+BEFORE INSERT
+ON cmplnt_prem_type
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+    
+    IF NEW.pd_cd IS NULL THEN
+		SET NEW.pd_cd = 0;
+	END IF;
+    
+    IF (NEW.cmplnt_num = 0 OR NEW.cmplnt_fr_dt = NOW() OR NEW.pd_cd = 0) AND NEW.prem_typ_desc IS NULL THEN
+		SET NEW.prem_typ_desc = "UNAVAILABLE";
+	END IF;
+END // 
+DELIMITER ;
+
+-- cmplnt_trans_distr
+DROP TRIGGER IF EXISTS cmplnttransdistr_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplnttransdistr_before_insert
+BEFORE INSERT
+ON cmplnt_trans_distr
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+    
+    IF NEW.cmplnt_num = 0 AND NEW.transit_district IS NULL THEN
+		SET NEW.transit_district = 0;
+	END IF;
+
+END // 
+DELIMITER ;
+
+-- cmplnt_lat_lon
+DROP TRIGGER IF EXISTS cmplntlatlon_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplntlatlon_before_insert
+BEFORE INSERT
+ON cmplnt_lat_lon
+FOR EACH ROW
+BEGIN
+    IF NEW.x_coord_cd IS NULL THEN
+		SET NEW.x_coord_cd = 0;
+	END IF;
+    
+    IF NEW.y_coord_cd IS NULL THEN
+		SET NEW.y_coord_cd = 0;
+	END IF;
+    
+	IF NEW.latitude IS NULL THEN
+		SET NEW.latitude = 0;
+	END IF;
+	IF NEW.longitude IS NULL THEN
+		SET NEW.longitude = 0;
+	END IF;
+
+END // 
+DELIMITER ;
+
+-- cmplnt_x_y
+DROP TRIGGER IF EXISTS cmplntxy_before_insert;
+DELIMITER //
+
+CREATE TRIGGER cmplntxy_before_insert
+BEFORE INSERT
+ON cmplnt_x_y
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+    
+    IF NEW.x_coord_cd IS NULL THEN
+		SET NEW.x_coord_cd = 0;
+	END IF;
+    
+    IF NEW.y_coord_cd IS NULL THEN
+		SET NEW.y_coord_cd = 0;
+	END IF;
+
+END // 
+DELIMITER ;
+
+-- precint_loc
+DROP TRIGGER IF EXISTS precintloc_before_insert;
+DELIMITER //
+
+CREATE TRIGGER precintloc_before_insert
+BEFORE INSERT
+ON precint_loc
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.addr_pct_cd IS NULL THEN
+		SET NEW.addr_pct_cd = 0;
+	END IF;
+END // 
+DELIMITER ;
+
+-- juris_loc
+DROP TRIGGER IF EXISTS jurisloc_before_insert;
+DELIMITER //
+
+CREATE TRIGGER jurisloc_before_insert
+BEFORE INSERT
+ON juris_loc
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.jurisdiction_code IS NULL THEN
+		SET NEW.jurisdiction_code = 0;
+	END IF;
+END // 
+DELIMITER ;
+
+-- vic_info
+DROP TRIGGER IF EXISTS vicinfo_before_insert;
+DELIMITER //
+
+CREATE TRIGGER vicinfo_before_insert
+BEFORE INSERT
+ON vic_info
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_to_dt IS NULL THEN
+		SET NEW.cmplnt_to_dt = NOW();
+	END IF;
+    
+    IF NEW.x_coord_cd IS NULL THEN
+		SET NEW.x_coord_cd = 0;
+	END IF;
+END // 
+DELIMITER ;
+
+-- sus_info
+DROP TRIGGER IF EXISTS susinfo_before_insert;
+DELIMITER //
+
+CREATE TRIGGER susinfo_before_insert
+BEFORE INSERT
+ON sus_info
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+    
+    IF NEW.x_coord_cd IS NULL THEN
+		SET NEW.x_coord_cd = 0;
+	END IF;
+END // 
+DELIMITER ;
+
+-- sus_age_info
+DROP TRIGGER IF EXISTS susageinfo_before_insert;
+DELIMITER //
+
+CREATE TRIGGER susageinfo_before_insert
+BEFORE INSERT
+ON sus_age_info
+FOR EACH ROW
+BEGIN
+    IF NEW.cmplnt_num IS NULL THEN
+		SET NEW.cmplnt_num = 0;
+	END IF;
+
+    IF NEW.cmplnt_fr_dt IS NULL THEN
+		SET NEW.cmplnt_fr_dt = NOW();
+	END IF;
+    
+    IF NEW.x_coord_cd IS NULL THEN
+		SET NEW.x_coord_cd = 0;
+	END IF;
+
+    IF NEW.susp_age_group IS NULL THEN
+		SET NEW.susp_age_group = 'UNKNOWN';
+	END IF;
+    
+END // 
+DELIMITER ;
 
 SET SQL_SAFE_UPDATES=1;
