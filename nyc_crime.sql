@@ -512,8 +512,8 @@ DELIMITER //
 CREATE PROCEDURE getComplaint(IN numb INT)
 BEGIN
 	SELECT cmplnt_num, 
-		IF(cmplnt_fr_dt IS NULL, "UNAVAILABLE", cmplnt_fr_dt) AS cmplnt_fr_dt, 
-        IF(cmplnt_to_dt IS NULL, "UNAVAILABLE", cmplnt_to_dt) AS cmplnt_to_dt, 
+		IF(cmplnt_time_date.cmplnt_fr_dt IS NULL, "UNAVAILABLE", cmplnt_time_date.cmplnt_fr_dt) AS cmplnt_fr_dt, 
+        IF(cmplnt_time_date.cmplnt_to_dt IS NULL, "UNAVAILABLE", cmplnt_time_date.cmplnt_to_dt) AS cmplnt_to_dt, 
         IF(cmplnt_fr_tm IS NULL, "UNAVAILABLE", cmplnt_fr_tm) AS cmplnt_fr_tm, 
         IF(cmplnt_to_tm IS NULL, "UNAVAILABLE", cmplnt_to_tm) AS cmplnt_to_tm, 
         IF(rpt_dt IS NULL, "UNAVAILABLE", rpt_dt) AS rpt_dt, 
@@ -523,8 +523,13 @@ BEGIN
 		IF(vic_age_group IS NULL, "UNAVAILABLE", vic_age_group) AS vic_age_group, 
 		IF(vic_sex IS NULL, "UNAVAILABLE", vic_sex) AS vic_sex, 
 		IF(vic_race IS NULL, "UNAVAILABLE", vic_race) AS vic_race,
-		pd_cd, ky_cd, ofns_desc, pd_desc, crm_atpt_cptd_cd, law_cat_cd
-	FROM cmplaint_nums 
+		IF(pd_cd IS NULL, "UNAVAILABLE", pd_cd) AS pd_cd, 
+        IF(ky_cd IS NULL, "UNAVAILABLE", ky_cd) AS ky_cd, 
+        IF(pd_desc IS NULL, "UNAVAILABLE", pd_desc) AS pd_desc,
+        IF(ofns_desc IS NULL, "UNAVAILABLE", ofns_desc) AS ofns_desc,
+        IF(crm_atpt_cptd_cd IS NULL, "UNAVAILABLE", crm_atpt_cptd_cd) AS crm_atpt_cptd_cd,
+        IF(law_cat_cd IS NULL, "UNAVAILABLE", law_cat_cd) AS law_cat_cd
+    FROM cmplaint_nums 
 		LEFT JOIN offense_type USING(cmplnt_num)
 		LEFT JOIN intrnl_class USING(cmplnt_num)
 		LEFT JOIN law_class USING(pd_cd)
@@ -532,13 +537,15 @@ BEGIN
 		LEFT JOIN cmplnt_rpt_dt USING(cmplnt_num, cmplnt_fr_dt, pd_cd)
 		LEFT JOIN precint_loc USING(cmplnt_num)
 		LEFT JOIN juris_loc USING(cmplnt_num)
-		LEFT JOIN cmplnt_x_y USING(cmplnt_num, cmplnt_fr_dt)
-		LEFT JOIN vic_info USING(cmplnt_num, cmplnt_to_dt, x_coord_cd)
-		LEFT JOIN sus_info USING(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
-		LEFT JOIN sus_age_info USING(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
+		LEFT JOIN vic_info USING(cmplnt_num)
+		LEFT JOIN sus_info USING(cmplnt_num)
+		LEFT JOIN sus_age_info USING(cmplnt_num)
 	WHERE cmplaint_nums.cmplnt_num = numb;
 END //
 DELIMITER ;
+
+CALL getComplaint(0);
+
 
 -- Procedure Two: Find all complaint numbers linked to a certain offense type
 DROP procedure IF EXISTS getOffense;
@@ -1393,5 +1400,6 @@ BEGIN
     
 END // 
 DELIMITER ;
+
 
 SET SQL_SAFE_UPDATES=1;
