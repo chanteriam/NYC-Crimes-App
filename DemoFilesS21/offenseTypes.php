@@ -126,7 +126,7 @@ try
 
         <?php } else { ?>
           <!-- IF query execution resulted in error display the following message-->
-          <h3 style="text-align: center">Sorry, no results found for complaint number:  <?php echo $_POST['cplt_num']; ?>. </h3>
+          <h3 style="text-align: center">Sorry, no results found for offense type:  <?php echo $_POST['cplt_num']; ?>. </h3>
         <?php }
     } ?>
 

@@ -476,22 +476,67 @@ FROM crimes_mega
 WHERE cmplnt_fr_dt IS NOT NULL AND x_coord_cd IS NOT NULL AND susp_age_group IS NOT NULL;
 
 /* CREATING ADVANCED FEATURES */
+/* views */
+-- View to get data to verify Mega Table. Saves the user having to make a repetitive query and insulates the database from
+-- user generated queries on our mega table.
+DROP VIEW IF EXISTS mega; 
+CREATE VIEW mega AS
+SELECT cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, 
+       pd_desc, crm_atpt_cptd_cd, law_cat_cd
+FROM cmplnt_time_date 
+	JOIN intrnl_class USING(cmplnt_num) 
+    JOIN law_class USING(pd_cd)
+ORDER BY cmplnt_fr_dt DESC
+LIMIT 100;
+
+-- view to see internal law classification codes and descriptions
+DROP VIEW IF EXISTS intClass;
+CREATE VIEW intClass AS
+SELECT DISTINCT pd_cd, pd_desc, law_cat_cd
+FROM law_class JOIN intrnl_class USING(pd_cd)
+ORDER BY pd_cd;
+
+-- view to see external law classification codes and descriptions
+DROP VIEW IF EXISTS extClass;
+CREATE VIEW extClass AS
+SELECT DISTINCT ky_cd, ofns_desc
+FROM offense_type
+WHERE ofns_desc IS NOT NULL
+ORDER BY ky_cd;
+
+
 /* stored procedures*/
 -- retrieval procedure
 DROP procedure IF EXISTS getComplaint;
 DELIMITER //
 CREATE PROCEDURE getComplaint(IN numb INT)
 BEGIN
-SELECT 	sus_info.cmplnt_num,
-		sus_info.cmplnt_fr_dt,
-		IF(susp_age_group IS NULL, 'UNAVAILABLE', susp_age_group) AS susp_age_group,
-		IF(susp_race IS NULL, 'UNAVAILABLE', susp_race) AS susp_race,
-		IF(susp_sex IS NULL, 'UNAVAILABLE', susp_sex) AS susp_sex
-FROM sus_info LEFT JOIN sus_age_info
-	ON sus_info.cmplnt_num = sus_age_info.cmplnt_num AND
-    sus_info.cmplnt_fr_dt = sus_age_info.cmplnt_fr_dt AND
-    sus_info.x_coord_cd = sus_age_info.x_coord_cd
-WHERE sus_info.cmplnt_num = numb;
+	SELECT cmplnt_num, 
+		IF(cmplnt_fr_dt IS NULL, "UNAVAILABLE", cmplnt_fr_dt) AS cmplnt_fr_dt, 
+        IF(cmplnt_to_dt IS NULL, "UNAVAILABLE", cmplnt_to_dt) AS cmplnt_to_dt, 
+        IF(cmplnt_fr_tm IS NULL, "UNAVAILABLE", cmplnt_fr_tm) AS cmplnt_fr_tm, 
+        IF(cmplnt_to_tm IS NULL, "UNAVAILABLE", cmplnt_to_tm) AS cmplnt_to_tm, 
+        IF(rpt_dt IS NULL, "UNAVAILABLE", rpt_dt) AS rpt_dt, 
+		IF(susp_age_group IS NULL, "UNAVAILABLE", susp_age_group) AS susp_age_group, 
+		IF(susp_sex IS NULL, "UNAVAILABLE", susp_sex) AS susp_sex, 
+		IF(susp_race IS NULL, "UNAVAILABLE", susp_race) AS susp_race, 
+		IF(vic_age_group IS NULL, "UNAVAILABLE", vic_age_group) AS vic_age_group, 
+		IF(vic_sex IS NULL, "UNAVAILABLE", vic_sex) AS vic_sex, 
+		IF(vic_race IS NULL, "UNAVAILABLE", vic_race) AS vic_race,
+		pd_cd, ky_cd, ofns_desc, pd_desc, crm_atpt_cptd_cd, law_cat_cd
+	FROM cmplaint_nums 
+		LEFT JOIN offense_type USING(cmplnt_num)
+		LEFT JOIN intrnl_class USING(cmplnt_num)
+		LEFT JOIN law_class USING(pd_cd)
+		LEFT JOIN cmplnt_time_date USING(cmplnt_num)
+		LEFT JOIN cmplnt_rpt_dt USING(cmplnt_num, cmplnt_fr_dt, pd_cd)
+		LEFT JOIN precint_loc USING(cmplnt_num)
+		LEFT JOIN juris_loc USING(cmplnt_num)
+		LEFT JOIN cmplnt_x_y USING(cmplnt_num, cmplnt_fr_dt)
+		LEFT JOIN vic_info USING(cmplnt_num, cmplnt_to_dt, x_coord_cd)
+		LEFT JOIN sus_info USING(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
+		LEFT JOIN sus_age_info USING(cmplnt_num, cmplnt_fr_dt, x_coord_cd)
+	WHERE cmplaint_nums.cmplnt_num = numb;
 END //
 DELIMITER ;
 
@@ -500,13 +545,18 @@ DROP procedure IF EXISTS getOffense;
 DELIMITER //
 CREATE PROCEDURE getOffense(IN offense VARCHAR(50))
 BEGIN
-	SELECT 	cmplnt_num,
-			ofns_desc, ky_cd
-	FROM offense_type
-	WHERE ofns_desc = offense
-	LIMIT 10;
+	SELECT cmplnt_num,
+		pd_desc,
+        cmplnt_fr_dt,
+        law_cat_cd
+	FROM cmplnt_time_date 
+		JOIN intrnl_class USING(cmplnt_num)
+		JOIN law_class USING(pd_cd)
+	WHERE pd_desc = offense
+	LIMIT 100;
 END //
 DELIMITER ;
+
 
 -- get law classification
 DROP procedure IF EXISTS getLaw;
@@ -514,22 +564,32 @@ DELIMITER //
 CREATE PROCEDURE getLaw(IN law VARCHAR(50))
 BEGIN
 SELECT 	cmplnt_num,
-		ofns_desc,
+		pd_desc,
         cmplnt_fr_dt,
-        law_cat_cd
-FROM crimes_mega
+        pd_cd
+FROM cmplnt_time_date 
+	JOIN intrnl_class USING(cmplnt_num)
+    JOIN law_class USING(pd_cd)
 WHERE law_cat_cd = law
-LIMIT 10;
+LIMIT 100;
 END //
 DELIMITER ;
+
 
 -- delete a cmplaint number
 DROP procedure IF EXISTS deleteComplaint;
 DELIMITER //
 CREATE PROCEDURE deleteComplaint(IN comp INT UNSIGNED)
 BEGIN
-DELETE FROM cmplaint_nums
-WHERE cmplnt_num = comp;
+	DELETE FROM cmplaint_nums
+	WHERE cmplnt_num = comp;
+
+	IF comp = 0 THEN
+		DELETE FROM law_class
+        WHERE pd_cd = 0;
+        DELETE FROM cmplnt_lat_lon
+		WHERE x_coord_cd = 0;
+	END IF;
 END //
 DELIMITER ;
 
@@ -625,7 +685,6 @@ BEGIN
 		VALUES(num);
 END //
 DELIMITER ;
-
 
 -- inserting: offense_type
 DROP PROCEDURE IF EXISTS insert_offense_type;
@@ -889,35 +948,6 @@ BEGIN
     VALUES(cmplnt_num, cmplnt_fr_dt, x_coord_cd, susp_age_group);
 END //
 DELIMITER ;
-
-
-/* views */
--- View to get data to verify Mega Table. Saves the user having to make a repetitive query and insulates the database from
--- user generated queries on our mega table.
-DROP VIEW IF EXISTS mega; 
-CREATE VIEW mega AS
-SELECT * 
-FROM crimes_mega 
-LIMIT 10;
-
-
--- view to see offense types codes and descriptions
-DROP VIEW IF EXISTS offense;
-CREATE VIEW offense AS
-SELECT DISTINCT ky_cd, ofns_desc
-FROM offense_type
-WHERE ofns_desc IS NOT NULL
-ORDER BY ky_cd;
-
-
--- view to see law classification codes and descriptions
-DROP VIEW IF EXISTS law;
-CREATE VIEW law AS
-SELECT DISTINCT *
-FROM law_class
-WHERE pd_cd IS NOT NULL
-ORDER BY pd_cd;
-
 
 /* TRIGGERS */
 -- delete trigger
