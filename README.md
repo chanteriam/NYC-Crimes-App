@@ -27,5 +27,6 @@ Required environement:
 -Edit the conn.php file with the details for your database login. 
 
 -Finally, access the frontend at:
+
   http://localhost/<frontend_folder>/index.html (for Windows) 
   http://localhost:8888/<frontend folder>/index.html (for MAC) 
