@@ -956,6 +956,255 @@ BEGIN
 END //
 DELIMITER ;
 
+-- update procedure; handles updates from front-end form
+DROP PROCEDURE IF EXISTS update_proc;
+DELIMITER //
+
+CREATE PROCEDURE update_proc(IN cmplnt_num INT UNSIGNED, IN cmplnt_fr_dt VARCHAR(10), IN cmplnt_fr_tm VARCHAR(10),
+    IN cmplnt_to_dt VARCHAR(10), IN cmplnt_to_tm VARCHAR(10), IN addr_pct_cd VARCHAR(5), 
+    IN rpt_dt VARCHAR(10), IN ky_cd SMALLINT UNSIGNED, IN ofns_desc VARCHAR(40), 
+    IN pd_cd VARCHAR(10), IN pd_desc VARCHAR(75), IN crm_atpt_cptd_cd VARCHAR(10), 
+    IN law_cat_cd VARCHAR(15), IN boro_nm VARCHAR(15), IN loc_of_occur_desc VARCHAR(15), 
+    IN prem_typ_desc VARCHAR(30), IN juris_desc VARCHAR(40), IN jurisdiction_code VARCHAR(5), 
+    IN parks_nm VARCHAR(85), IN hadevelopt VARCHAR(50), IN housing_psa MEDIUMINT UNSIGNED, 
+    IN x_coord_cd VARCHAR(40), IN y_coord_cd VARCHAR(40), IN susp_age_group VARCHAR(10), 
+    IN susp_race VARCHAR(35),IN susp_sex VARCHAR(10), IN transit_district VARCHAR(5), 
+    IN latitude VARCHAR(40), IN longitude VARCHAR(40), IN patrol_boro VARCHAR(30), IN station_name VARCHAR(35), 
+    IN vic_age_group VARCHAR(10), IN vic_race VARCHAR(35), IN vic_sex CHAR(1))
+BEGIN 
+    declare exist BOOL DEFAULT FALSE;
+    declare num int unsigned;
+    set num = cmplnt_num;
+    
+    -- checking if complaint number to update exists in dataset already
+    select *
+    into exist
+    from cmplaint_nums
+    where cmplnt_num = num
+    limit 1;
+        
+	-- convert into correct data types
+    SET cmplnt_num = IF(cmplnt_num = '', NULL, cmplnt_num),
+		cmplnt_fr_dt = IF(cmplnt_fr_dt != '', STR_TO_DATE(cmplnt_fr_dt, "%m/%d/%Y"), NULL),
+		cmplnt_fr_tm = IF(cmplnt_fr_tm != '', CAST(cmplnt_fr_tm AS TIME), NULL),
+		cmplnt_to_dt = IF(cmplnt_to_dt != '', STR_TO_DATE(cmplnt_to_dt, "%m/%d/%Y"), NULL),
+        cmplnt_to_tm = IF(cmplnt_to_tm != '', CAST(cmplnt_to_tm AS TIME), NULL),
+        addr_pct_cd = IF(addr_pct_cd != '', CONVERT(addr_pct_cd, UNSIGNED), NULL),
+		rpt_dt = IF(rpt_dt != '', STR_TO_DATE(rpt_dt, "%m/%d/%Y"), NULL),
+        ky_cd = IF(ky_cd != '', ky_cd, NULL),
+        ofns_desc = IF(ofns_desc != '', ofns_desc, NULL),
+        pd_cd = IF(pd_cd != '', CONVERT(pd_cd, UNSIGNED), NULL),
+        pd_desc = IF(pd_desc != '', pd_desc, NULL),
+		crm_atpt_cptd_cd = IF(crm_atpt_cptd_cd != '', crm_atpt_cptd_cd, NULL),
+        law_cat_cd = IF(law_cat_cd != '', law_cat_cd, NULL),
+		boro_nm = IF(boro_nm != '', boro_nm, NULL),
+        loc_of_occur_desc = IF(loc_of_occur_desc != '', loc_of_occur_desc, NULL),
+        prem_typ_desc = IF(prem_typ_desc != '', prem_typ_desc, NULL),
+        juris_desc = IF(juris_desc != '', juris_desc, NULL),
+		jurisdiction_code = IF(jurisdiction_code != '', CONVERT(jurisdiction_code, UNSIGNED), NULL),
+		parks_nm = IF(parks_nm != '' AND parks_nm != 'NA', parks_nm, NULL),
+        hadevelopt = IF(hadevelopt != '', hadevelopt, NULL),
+        housing_psa = IF(housing_psa != '' AND housing_psa != 'NA', 
+			CONVERT(replace(housing_psa,',',''), UNSIGNED), NULL),
+		x_coord_cd = IF(x_coord_cd != '', CONVERT(x_coord_cd, UNSIGNED), NULL),
+		y_coord_cd = IF(y_coord_cd != '', CONVERT(y_coord_cd, UNSIGNED), NULL),
+        susp_age_group = IF(susp_age_group != '', susp_age_group, NULL),
+		susp_race = IF(susp_race != '', susp_race, NULL),
+		susp_sex = IF(susp_sex != '', susp_sex, NULL),
+        transit_district = IF(transit_district != '', CONVERT(transit_district, UNSIGNED), NULL),
+        latitude = IF(latitude != '', CONVERT(latitude, DECIMAL(12,10)), NULL),
+		longitude = IF(longitude != '', CONVERT(longitude, DECIMAL(12,10)), NULL),
+        patrol_boro = IF(patrol_boro != '', patrol_boro, NULL),
+		station_name = IF(station_name != '', station_name, NULL),
+		vic_age_group = IF(vic_age_group != '', vic_age_group, NULL),
+		vic_race = IF(vic_race != '', vic_race, NULL),
+		vic_sex = IF(vic_sex != '', vic_sex, NULL);
+                
+		IF cmplnt_num IS NOT NULL AND exist != 0 THEN  
+        -- update the data types into the correct tables; only allows updates for complaint information
+        -- (not offense descriptions, etc.)
+			CALL update_cmplnt_time_date(cmplnt_num, cmplnt_fr_tm, cmplnt_to_dt, cmplnt_to_tm);
+			CALL update_cmplnt_rpt_dt(cmplnt_num, rpt_dt);
+			CALL update_cmplnt_loc(cmplnt_num, boro_nm, loc_of_occur_desc);
+			CALL update_cmplnt_housing_loc(cmplnt_num, housing_psa);
+			CALL update_housing_dev(cmplnt_num, hadevelopt);
+			CALL update_complaint_park(cmplnt_num, parks_nm);
+			CALL update_cmplnt_prem_type(cmplnt_num, prem_typ_desc);
+			CALL update_cmplnt_trans_distr(cmplnt_num, transit_district);
+			CALL update_precint_loc(cmplnt_num, patrol_boro, boro_nm, station_name);
+			CALL update_vic_info(cmplnt_num, vic_age_group, vic_race, vic_sex);
+			CALL update_sus_info(cmplnt_num, susp_race, susp_sex);
+			CALL update_sus_age_info(cmplnt_num, susp_age_group);
+        -- calls inserts if the complaint number is null
+		ELSE 
+			CALL insert_proc(cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, cmplnt_to_dt, 
+            cmplnt_to_tm, addr_pct_cd,rpt_dt, ky_cd, ofns_desc, pd_cd,pd_desc,crm_atpt_cptd_cd, 
+            law_cat_cd, boro_nm,loc_of_occur_desc,prem_typ_desc,juris_desc, jurisdiction_code,
+            parks_nm, hadevelopt, housing_psa, x_coord_cd , y_coord_cd, susp_age_group,
+            susp_race, susp_sex, transit_district, latitude, longitude, patrol_boro, station_name,
+            vic_age_group, vic_race, vic_sex);
+		END IF;
+
+END //
+DELIMITER ;
+
+-- updating: cmplnt_time_date
+DROP PROCEDURE IF EXISTS update_cmplnt_time_date;
+
+DELIMITER //
+CREATE PROCEDURE update_cmplnt_time_date(IN num INT, IN fr_tm TIME, IN to_dt DATE, IN to_tm TIME) 
+BEGIN
+	UPDATE cmplnt_time_date
+	SET cmplnt_fr_tm = IF(fr_tm IS NULL, cmplnt_fr_tm, fr_tm),
+        cmplnt_to_dt = IF(to_dt IS NULL, cmplnt_to_dt, to_dt),
+        cmplnt_to_tm = IF(to_tm IS NULL, cmplnt_to_tm, to_tm)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: cmplnt_rpt_dt
+DROP PROCEDURE IF EXISTS update_cmplnt_rpt_dt;
+
+DELIMITER //
+CREATE PROCEDURE update_cmplnt_rpt_dt(IN num INT, IN rpt DATE) 
+BEGIN
+	UPDATE cmplnt_rpt_dt
+    SET rpt_dt = IF(rpt IS NULL, rpt_dt, rpt)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: cmplnt_loc
+DROP PROCEDURE IF EXISTS update_cmplnt_loc;
+
+DELIMITER //
+CREATE PROCEDURE update_cmplnt_loc(IN num INT, IN boro VARCHAR(15),
+									IN loc_desc VARCHAR(15)) 
+BEGIN
+	UPDATE cmplnt_loc
+    SET boro_nm = IF(boro IS NULL, boro_nm, boro),
+		loc_of_occur_desc = IF(loc_desc IS NULL, loc_of_occur_desc, loc_desc)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: cmplnt_housing_loc
+DROP PROCEDURE IF EXISTS update_cmplnt_housing_loc;
+
+DELIMITER //
+CREATE PROCEDURE update_cmplnt_housing_loc(IN num INT, IN psa MEDIUMINT UNSIGNED) 
+BEGIN
+	UPDATE cmplnt_housing_loc
+    SET housing_psa = IF(psa IS NULL, housing_psa, psa)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: housing_dev
+DROP PROCEDURE IF EXISTS update_housing_dev;
+
+DELIMITER //
+CREATE PROCEDURE update_housing_dev(IN num INT, IN develop VARCHAR(50)) 
+BEGIN
+	UPDATE housing_dev
+    SET hadevelopt = IF(develop IS NULL, hadevelopt, develop)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: complaint_park
+DROP PROCEDURE IF EXISTS update_complaint_park;
+
+DELIMITER //
+CREATE PROCEDURE update_complaint_park(IN num INT, IN p VARCHAR(85)) 
+BEGIN
+	UPDATE complaint_park
+    SET parks_nm = IF(p IS NULL, parks_nm, p)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: cmplnt_prem_type
+DROP PROCEDURE IF EXISTS update_cmplnt_prem_type;
+
+DELIMITER //
+CREATE PROCEDURE update_cmplnt_prem_type(IN num INT, IN prem VARCHAR(30)) 
+BEGIN
+	UPDATE cmplnt_prem_type
+    SET prem_typ_desc = IF(prem IS NULL, prem_typ_desc, prem)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: cmplnt_trans_distr
+DROP PROCEDURE IF EXISTS update_cmplnt_trans_distr;
+
+DELIMITER //
+CREATE PROCEDURE update_cmplnt_trans_distr(IN num INT, IN transit TINYINT UNSIGNED) 
+BEGIN
+	UPDATE cmplnt_trans_distr
+    SET transit_district = IF(transit IS NULL, transit_district, transit)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: precint_loc
+DROP PROCEDURE IF EXISTS update_precint_loc;
+
+DELIMITER //
+CREATE PROCEDURE update_precint_loc(IN num INT, IN boro VARCHAR(30),
+									IN nm VARCHAR(15), station VARCHAR(35)) 
+BEGIN
+	UPDATE precint_loc
+    SET patrol_boro = IF(boro IS NULL, patrol_boro, boro),
+		boro_nm = IF(nm IS NULL, boro_nm, nm),
+		station_name = IF(station IS NULL, station_name, station)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+
+-- updating: vic_info
+DROP PROCEDURE IF EXISTS update_vic_info;
+
+DELIMITER //
+CREATE PROCEDURE update_vic_info(IN num INT, IN age_group VARCHAR(10), 
+								IN race VARCHAR(35), IN sex CHAR(1)) 
+BEGIN
+	UPDATE vic_info
+    SET vic_age_group = IF(age_group IS NULL, vic_age_group, age_group),
+		vic_race = IF(race IS NULL, vic_race, race),
+        vic_sex = IF(sex IS NULL, vic_sex, sex)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+
+-- updating: sus_info
+DROP PROCEDURE IF EXISTS update_sus_info;
+
+DELIMITER //
+CREATE PROCEDURE update_sus_info(IN num INT, IN race VARCHAR(35), IN sex CHAR(1)) 
+BEGIN
+	UPDATE sus_info
+    SET susp_race = IF(race IS NULL, susp_race, race),
+		susp_sex = IF(sex IS NULL, susp_sex, sex)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
+-- updating: sus_age_info
+DROP PROCEDURE IF EXISTS update_sus_age_info;
+
+DELIMITER //
+CREATE PROCEDURE update_sus_age_info(IN num INT, IN age_group VARCHAR(10)) 
+BEGIN
+	UPDATE sus_age_info
+    SET susp_age_group = IF(age_group IS NULL, susp_age_group, age_group)
+    WHERE cmplnt_num = num;
+END //
+DELIMITER ;
+
 /* TRIGGERS */
 -- delete trigger
 DROP TRIGGER IF EXISTS cmplaintnums_after_delete;

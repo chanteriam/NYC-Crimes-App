@@ -38,11 +38,8 @@ if (isset($_POST['f_submit'])) {
     $var_victim_age = $_POST['victim_age'];
     $var_victim_race = $_POST['victim_race'];
     $var_victim_sex = $_POST['victim_sex'];
-    
-    $query0 = "CALL deleteComplaint(:cmplnt_num)";
 
-
-    $query = "CALL insert_proc(
+    $query = "CALL update_proc(
               :cmplnt_num,
               :cmplnt_fr_dt,
               :cmplnt_fr_tm,
@@ -80,12 +77,6 @@ if (isset($_POST['f_submit'])) {
 
     try
     {
-
-      $prepared_stmt = $dbo->prepare($query0);
-      $prepared_stmt->bindValue(':cmplnt_num', $var_complaint_num, PDO::PARAM_INT);
-      $result = $prepared_stmt->execute();
-
-
       $prepared_stmt = $dbo->prepare($query);
       $prepared_stmt->bindValue(':cmplnt_num', $var_complaint_num, PDO::PARAM_INT);
       $prepared_stmt->bindValue(':cmplnt_fr_dt', $var_from_date, PDO::PARAM_STR);
