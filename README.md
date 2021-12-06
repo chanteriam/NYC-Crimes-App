@@ -1,5 +1,5 @@
 # cs3265_proj2
-Required environement: 
+**Required environement:**
 
   -WAMP (Windows) or MAMP (MacOS)
   
@@ -8,7 +8,8 @@ Required environement:
   -MySQL Database created 
   
   
- Setup:
+ **Setup:**
+ 
   -Download source dataset from https://www.kaggle.com/mrmorj/new-york-city-police-crime-data-historic 
   
   -Make sure your MySQL Server is running, whether that be through WAMP or MAMP 
