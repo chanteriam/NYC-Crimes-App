@@ -6,6 +6,7 @@ Required environement:
   
  Setup:
   -Download source dataset from https://www.kaggle.com/mrmorj/new-york-city-police-crime-data-historic 
+  
   -Make sure your MySQL Server is running, whether that be through WAMP or MAMP 
   -Open up nyccrimes.sql query file. Change the load data statement to use the datapath leading to the folder containing the downloaded dataset. 
   -Update allowed query time in your MySQL Workbench settings:
