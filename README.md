@@ -28,5 +28,5 @@ Required environement:
 
 -Finally, access the frontend at:
 
-  http://localhost/<frontend_folder>/index.html (for Windows) 
-  http://localhost:8888/<frontend folder>/index.html (for MAC) 
+  -http://localhost/<frontend_folder>/index.html (for Windows) 
+  -http://localhost:8888/<frontend folder>/index.html (for MAC) 
