@@ -972,7 +972,7 @@ CREATE PROCEDURE update_proc(IN cmplnt_num INT UNSIGNED, IN cmplnt_fr_dt VARCHAR
     IN latitude VARCHAR(40), IN longitude VARCHAR(40), IN patrol_boro VARCHAR(30), IN station_name VARCHAR(35), 
     IN vic_age_group VARCHAR(10), IN vic_race VARCHAR(35), IN vic_sex CHAR(1))
 BEGIN 
-    declare exist BOOL DEFAULT FALSE;
+    declare exist INT DEFAULT FALSE;
     declare num int unsigned;
     set num = cmplnt_num;
     
@@ -1048,6 +1048,10 @@ BEGIN
 END //
 DELIMITER ;
 
+
+select *
+from cmplaint_nums
+where cmplnt_num = 2;
 -- updating: cmplnt_time_date
 DROP PROCEDURE IF EXISTS update_cmplnt_time_date;
 
