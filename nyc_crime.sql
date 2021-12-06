@@ -1048,10 +1048,6 @@ BEGIN
 END //
 DELIMITER ;
 
-
-select *
-from cmplaint_nums
-where cmplnt_num = 2;
 -- updating: cmplnt_time_date
 DROP PROCEDURE IF EXISTS update_cmplnt_time_date;
 
