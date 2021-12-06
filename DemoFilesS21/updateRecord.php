@@ -468,7 +468,7 @@ if (isset($_POST['f_submit'])) {
     <?php 
         } else { 
     ?>
-          <h3 style ="text-align: center"> Sorry, there was an error. Complaint data updated </h3>
+          <h3 style ="text-align: center"> Sorry, there was an error. Complaint data not updated </h3>
     <?php 
         }
       } 
