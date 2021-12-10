@@ -1,4 +1,4 @@
-# cs3265_proj2
+# NYC-Crimes-App
 **Required environement:**
 
   -WAMP (Windows) or MAMP (MacOS)
