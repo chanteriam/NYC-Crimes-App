@@ -1,5 +1,5 @@
 # NYC-Crimes-App
-**Required environement:**
+**Required environment:**
 
   -WAMP (Windows) or MAMP (MacOS)
   
