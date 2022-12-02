@@ -1,4 +1,6 @@
-# NYC-Crimes-App
+# NYC Historic Crimes Application
+![Application Main Page](index.png?raw=true "Application Home Page")
+
 **Required environment:**
 
   -WAMP (Windows) or MAMP (MacOS)
